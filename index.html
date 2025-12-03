@@ -17,6 +17,8 @@
               'fade-in': 'fadeIn 0.5s ease-out',
               'slide-up': 'slideUp 0.5s ease-out',
               'float': 'float 6s ease-in-out infinite',
+              'slide-in-bottom': 'slideInBottom 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+              'pulse-glow': 'pulseGlow 2s infinite',
             },
             keyframes: {
               fadeIn: {
@@ -27,9 +29,17 @@
                 '0%': { transform: 'translateY(20px)', opacity: '0' },
                 '100%': { transform: 'translateY(0)', opacity: '1' },
               },
+              slideInBottom: {
+                '0%': { transform: 'translateY(100%)', opacity: '0' },
+                '100%': { transform: 'translateY(0)', opacity: '1' },
+              },
               float: {
                 '0%, 100%': { transform: 'translateY(0)' },
                 '50%': { transform: 'translateY(-10px)' },
+              },
+              pulseGlow: {
+                '0%, 100%': { boxShadow: '0 0 10px rgba(16, 185, 129, 0.2)' },
+                '50%': { boxShadow: '0 0 20px rgba(16, 185, 129, 0.6)' },
               }
             }
           }
@@ -50,6 +60,30 @@
         border-radius: 1.5rem; /* rounded-3xl */
         box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
         border: 1px solid #e2e8f0;
+      }
+
+      /* Futuristic / Neon Glass Utilities */
+      .glass-neon {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+      }
+      
+      .glass-neon-dark {
+        background: rgba(15, 23, 42, 0.8);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .btn-hover-effect {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .btn-hover-effect:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.3);
       }
       
       /* Custom Scrollbar */

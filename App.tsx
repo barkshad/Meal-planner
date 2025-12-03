@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   FoodItem, 
@@ -19,10 +18,21 @@ import { SplashScreen } from './components/SplashScreen';
 import { AuthView } from './components/AuthView';
 import { AnalyticsView } from './components/AnalyticsView';
 import { Onboarding } from './components/Onboarding';
+import { EditBudgetModal } from './components/EditBudgetModal';
 import { runAIAction } from './services/geminiService';
-import { ChefHat, Loader2, Home, Calendar, ShoppingCart, Archive, Wallet, Coffee, Settings, LogOut, BarChart3, Sparkles } from 'lucide-react';
+import { ChefHat, Loader2, Home, Calendar, ShoppingCart, Archive, Wallet, Coffee, Settings, LogOut, BarChart3, Sparkles, Edit3, Check } from 'lucide-react';
 
 type ViewMode = 'meal' | 'week' | 'shop' | 'pantry' | 'analytics';
+
+// --- Local Storage Keys ---
+const LS_KEYS = {
+  USER: 'mealmind_user',
+  PREFS: 'mealmind_preferences',
+  AI_RESULTS: 'mealmind_ai_results',
+  FALLBACK_RESULTS: 'mealmind_fallback_results',
+  BUDGET: 'mealmind_user_budget',
+  VIEW: 'mealmind_last_active_view'
+};
 
 const App: React.FC = () => {
   // --- App State ---
@@ -47,15 +57,71 @@ const App: React.FC = () => {
   const [inventoryAnalysis, setInventoryAnalysis] = useState<InventoryAnalysisResponse | null>(null);
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
 
-  // --- Initialization ---
+  // --- UI States for Futuristic Features ---
+  const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
+  // --- Initialization & Local Storage ---
+  
   useEffect(() => {
-    const savedUser = localStorage.getItem('mealmind_user');
+    // 1. Restore User
+    const savedUser = localStorage.getItem(LS_KEYS.USER);
     if (savedUser) {
       const parsedUser = JSON.parse(savedUser);
       setUser(parsedUser);
       checkOnboardingStatus(parsedUser.email);
     }
+
+    // 2. Restore Preferences & Budget
+    const savedPrefs = localStorage.getItem(LS_KEYS.PREFS);
+    if (savedPrefs) {
+      setPreferences(JSON.parse(savedPrefs));
+    }
+    const savedBudget = localStorage.getItem(LS_KEYS.BUDGET);
+    if (savedBudget) {
+      setPreferences(prev => ({ ...prev, budget: parseFloat(savedBudget) }));
+    }
+
+    // 3. Restore Results (AI or Fallback)
+    const savedAIResult = localStorage.getItem(LS_KEYS.AI_RESULTS);
+    const savedFallback = localStorage.getItem(LS_KEYS.FALLBACK_RESULTS);
+    
+    // Priority: AI Result -> Fallback Result
+    if (savedAIResult) {
+      setMealResult(JSON.parse(savedAIResult));
+    } else if (savedFallback) {
+      setMealResult(JSON.parse(savedFallback));
+    }
+
+    // 4. Restore View
+    const lastView = localStorage.getItem(LS_KEYS.VIEW);
+    if (lastView) {
+      setCurrentView(lastView as ViewMode);
+    }
   }, []);
+
+  // Save Preferences whenever they change
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem(LS_KEYS.PREFS, JSON.stringify(preferences));
+      localStorage.setItem(LS_KEYS.BUDGET, preferences.budget.toString());
+    }
+  }, [preferences, user]);
+
+  // Save View
+  useEffect(() => {
+    localStorage.setItem(LS_KEYS.VIEW, currentView);
+  }, [currentView]);
+
+
+  // --- Helper Functions ---
+
+  const showNotification = (msg: string) => {
+    setToastMessage(msg);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
+  };
 
   const checkOnboardingStatus = (email: string) => {
     const hasOnboarded = localStorage.getItem(`mealmind_onboarded_${email}`);
@@ -69,12 +135,16 @@ const App: React.FC = () => {
   const handleLogin = (userProfile: UserProfile) => {
     setUser(userProfile);
     setPreferences(userProfile.preferences);
+    localStorage.setItem(LS_KEYS.USER, JSON.stringify(userProfile));
     checkOnboardingStatus(userProfile.email);
   };
 
   const handleLogout = () => {
     setUser(null);
-    localStorage.removeItem('mealmind_user');
+    localStorage.removeItem(LS_KEYS.USER);
+    localStorage.removeItem(LS_KEYS.AI_RESULTS);
+    localStorage.removeItem(LS_KEYS.FALLBACK_RESULTS);
+    setMealResult(null);
   };
 
   const handleOnboardingComplete = () => {
@@ -91,22 +161,61 @@ const App: React.FC = () => {
     }));
   };
 
-  const handleSuggestMeal = async () => {
+  const handleBudgetUpdate = (newBudget: number) => {
+    // 1. Update State
+    handlePreferenceChange('budget', newBudget);
+    
+    // 2. Trigger Regeneration based on view
+    if (currentView === 'meal') {
+      // Small delay to allow state to settle, then regenerate
+      setTimeout(() => handleSuggestMeal(newBudget), 100); 
+    } else if (currentView === 'week') {
+       // Update weekly budget roughly based on daily
+       handlePreferenceChange('weeklyBudget', newBudget * 7);
+       setTimeout(() => handleWeeklyPlan(), 100);
+    }
+
+    showNotification("Budget updated & meals regenerating...");
+  };
+
+  const handleSuggestMeal = async (overrideBudget?: number) => {
     setLoading(true);
     setError(null);
-    setMealResult(null);
+    
+    // Use override budget if provided (for immediate regeneration), else state
+    const currentPrefs = overrideBudget ? { ...preferences, budget: overrideBudget } : preferences;
+
     try {
       const now = new Date();
       const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      
       const res = await runAIAction('suggest_meal', {
-        preferences,
+        preferences: currentPrefs,
         inventory,
         context: { currentTime: timeString, mealType: selectedMealType }
       });
+      
       setMealResult(res);
+
+      // STORAGE LOGIC:
+      // Check if it's a fallback (we infer this if message mentions 'Network Optimization' or similar from fallback engine)
+      const isFallback = res.message?.includes("Network Optimization");
+      
+      if (isFallback) {
+        localStorage.setItem(LS_KEYS.FALLBACK_RESULTS, JSON.stringify(res));
+      } else {
+        localStorage.setItem(LS_KEYS.AI_RESULTS, JSON.stringify(res));
+      }
+
     } catch (err) {
       console.error(err);
-      setError("Failed to suggest a meal. Please try again.");
+      setError("Failed to suggest a meal. Showing saved fallback if available.");
+      
+      // Load fallback if generation failed completely (rare due to service fallback)
+      const savedFallback = localStorage.getItem(LS_KEYS.FALLBACK_RESULTS);
+      if (savedFallback) {
+        setMealResult(JSON.parse(savedFallback));
+      }
     } finally {
       setLoading(false);
     }
@@ -123,7 +232,7 @@ const App: React.FC = () => {
       setWeeklyPlan(res);
     } catch (err) {
       console.error(err);
-      setError("Failed to generate plan. Try reducing the number of meals or increasing the budget slightly.");
+      setError("Failed to generate plan.");
     } finally {
       setLoading(false);
     }
@@ -146,7 +255,7 @@ const App: React.FC = () => {
       setShoppingList(res);
     } catch (err) {
       console.error(err);
-      setError("Failed to create shopping list. Please try again.");
+      setError("Failed to create shopping list.");
     } finally {
       setLoading(false);
     }
@@ -156,14 +265,11 @@ const App: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await runAIAction('analyze_inventory', {
-        preferences,
-        inventory,
-      });
+      const res = await runAIAction('analyze_inventory', { preferences, inventory });
       setInventoryAnalysis(res);
     } catch (err) {
       console.error(err);
-      setError("Analysis failed. Please try again.");
+      setError("Analysis failed.");
     } finally {
       setLoading(false);
     }
@@ -173,14 +279,11 @@ const App: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await runAIAction('get_analytics', {
-        preferences,
-        inventory,
-      });
+      const res = await runAIAction('get_analytics', { preferences, inventory });
       setAnalyticsData(res);
     } catch (err) {
       console.error(err);
-      setError("Could not load analytics. Please check your connection.");
+      setError("Could not load analytics.");
     } finally {
       setLoading(false);
     }
@@ -199,6 +302,33 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen relative text-slate-800 selection:bg-emerald-100 font-sans bg-slate-50">
       
+      {/* Toast Notification */}
+      <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-[70] transition-all duration-300 ${showToast ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0 pointer-events-none'}`}>
+        <div className="glass-neon px-6 py-3 rounded-full flex items-center gap-2 text-emerald-700 shadow-xl">
+          <div className="bg-emerald-100 p-1 rounded-full"><Check size={14} /></div>
+          <span className="text-sm font-bold">{toastMessage}</span>
+        </div>
+      </div>
+
+      {/* Edit Budget Modal */}
+      <EditBudgetModal 
+        isOpen={isBudgetModalOpen} 
+        onClose={() => setIsBudgetModalOpen(false)} 
+        currentBudget={preferences.budget}
+        onSave={handleBudgetUpdate}
+      />
+
+      {/* Floating Edit Budget Button (Visible when results are shown) */}
+      {(mealResult || weeklyPlan) && !loading && (
+        <button
+          onClick={() => setIsBudgetModalOpen(true)}
+          className="fixed bottom-24 right-4 z-[60] bg-white text-emerald-600 px-4 py-3 rounded-full shadow-xl shadow-emerald-900/10 border border-emerald-100 flex items-center gap-2 hover:scale-105 active:scale-95 transition-all font-bold group animate-slide-in-bottom"
+        >
+          <Edit3 size={18} className="group-hover:rotate-12 transition-transform" />
+          <span>Edit Budget</span>
+        </button>
+      )}
+
       {/* Onboarding Overlay */}
       {showOnboarding && <Onboarding onComplete={handleOnboardingComplete} />}
 
@@ -248,6 +378,7 @@ const App: React.FC = () => {
           <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
             <div className="relative mb-4">
               <Loader2 size={48} className="text-emerald-600 animate-spin relative z-10" />
+              <div className="absolute inset-0 bg-emerald-200 rounded-full blur-xl opacity-50 animate-pulse-glow"></div>
             </div>
             <p className="text-lg font-medium text-slate-600 animate-pulse">
               Consulting AI Market Expert...
@@ -257,7 +388,9 @@ const App: React.FC = () => {
           <>
             {currentView === 'meal' && (
               mealResult ? (
-                <ResultCard data={mealResult} onReset={() => setMealResult(null)} />
+                <div className="animate-slide-up">
+                  <ResultCard data={mealResult} onReset={() => setMealResult(null)} />
+                </div>
               ) : (
                 <div className="space-y-6 animate-slide-up">
                   {/* Preferences Panel */}
@@ -320,7 +453,7 @@ const App: React.FC = () => {
                             <button
                               key={type}
                               onClick={() => setSelectedMealType(type)}
-                              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 border ${
+                              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 border btn-hover-effect ${
                                 selectedMealType === type 
                                 ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-200' 
                                 : 'bg-slate-100 text-slate-500 border-transparent hover:bg-slate-200 hover:text-slate-800'
@@ -333,7 +466,7 @@ const App: React.FC = () => {
                     </div>
 
                     <button 
-                      onClick={handleSuggestMeal} 
+                      onClick={() => handleSuggestMeal()} 
                       className="group relative w-full bg-emerald-600 text-white font-bold py-4 rounded-xl overflow-hidden transition-all hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-200 hover:-translate-y-0.5 active:translate-y-0"
                     >
                        <div className="flex items-center justify-center gap-2 relative z-10">
@@ -367,7 +500,7 @@ const App: React.FC = () => {
                     </div>
                     <button 
                       onClick={handleWeeklyPlan} 
-                      className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
+                      className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 btn-hover-effect"
                     >
                       Generate Week Plan
                     </button>
@@ -394,7 +527,8 @@ const App: React.FC = () => {
                      <button 
                        onClick={handleShoppingList} 
                        disabled={!weeklyPlan} 
-                       className="bg-orange-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-orange-200"
+                       className="bg-orange-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-orange-200 btn-hover-effect"
+                       title={!weeklyPlan ? "Create a weekly plan first" : ""}
                      >
                        {weeklyPlan ? "Create List" : "Generate Plan First"}
                      </button>
@@ -410,7 +544,7 @@ const App: React.FC = () => {
                 <div className="flex justify-end">
                    <button 
                      onClick={handleAnalyzeInventory} 
-                     className="bg-purple-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-purple-700 transition-all shadow-lg shadow-purple-200 flex items-center gap-2"
+                     className="bg-purple-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-purple-700 transition-all shadow-lg shadow-purple-200 flex items-center gap-2 btn-hover-effect"
                    >
                      <Sparkles size={18} /> AI Inventory Analysis
                    </button>
@@ -430,7 +564,7 @@ const App: React.FC = () => {
                        <p className="text-slate-500 mb-8">Visualize your spending trends and get market price alerts.</p>
                        <button 
                          onClick={handleAnalytics} 
-                         className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
+                         className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 btn-hover-effect"
                        >
                          Load Analytics
                        </button>
@@ -500,7 +634,7 @@ const NavButton: React.FC<{active: boolean, onClick: () => void, icon: React.Rea
   return (
     <button 
       onClick={onClick}
-      className={`flex flex-col items-center gap-1 p-3 rounded-xl w-full transition-all duration-300 relative overflow-hidden ${
+      className={`flex flex-col items-center gap-1 p-3 rounded-xl w-full transition-all duration-300 relative overflow-hidden btn-hover-effect ${
         active 
           ? activeClasses[color as keyof typeof activeClasses]
           : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
