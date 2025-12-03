@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   FoodItem, 
@@ -105,7 +106,7 @@ const App: React.FC = () => {
       setMealResult(res);
     } catch (err) {
       console.error(err);
-      setError("Failed to suggest a meal. Check your connection.");
+      setError("Failed to suggest a meal. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -122,7 +123,7 @@ const App: React.FC = () => {
       setWeeklyPlan(res);
     } catch (err) {
       console.error(err);
-      setError("Failed to generate weekly plan.");
+      setError("Failed to generate plan. Try reducing the number of meals or increasing the budget slightly.");
     } finally {
       setLoading(false);
     }
@@ -145,7 +146,7 @@ const App: React.FC = () => {
       setShoppingList(res);
     } catch (err) {
       console.error(err);
-      setError("Failed to create shopping list.");
+      setError("Failed to create shopping list. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -162,7 +163,7 @@ const App: React.FC = () => {
       setInventoryAnalysis(res);
     } catch (err) {
       console.error(err);
-      setError("Analysis failed.");
+      setError("Analysis failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -179,7 +180,7 @@ const App: React.FC = () => {
       setAnalyticsData(res);
     } catch (err) {
       console.error(err);
-      setError("Could not load analytics.");
+      setError("Could not load analytics. Please check your connection.");
     } finally {
       setLoading(false);
     }

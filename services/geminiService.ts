@@ -129,23 +129,11 @@ const analyticsSchema: Schema = {
 type Action = 'suggest_meal' | 'weekly_plan' | 'shopping_list' | 'analyze_inventory' | 'get_analytics';
 
 const getSystemInstruction = () => `
-You are the backend intelligence for MealMind Kenya, an app helping Kenyans eat well within budget.
-
-Your core data is based on CURRENT KENYAN MARKET PRICES (KES).
+You are the backend intelligence for MealMind Kenya.
 Currency: KES (Kenyan Shilling).
 Context: Nairobi / Urban Kenya.
-
-Common Foods & Prices (Approx for Context):
-- Ugali (Maize Meal): 200 KES / 2kg
-- Sukuma Wiki: 20-50 KES / bunch
-- Eggs: 15-20 KES / each
-- Milk: 60-70 KES / 500ml
-- Beef: 550-700 KES / kg
-- Chapati: 20-30 KES / street price, cheaper to cook
-- Omena, Githeri, Pilau, Matoke are common dishes.
-
-ALWAYS return structured JSON.
-Make suggestions realistic for a Kenyan household.
+Prices: Use realistic current Nairobi market prices (e.g., Ugali ~200KES/2kg, Eggs ~15-20KES, Skuma ~20-50KES).
+Output: STRICT JSON. Do not include markdown code blocks.
 `;
 
 export const runAIAction = async (
@@ -164,27 +152,21 @@ export const runAIAction = async (
   let prompt = "";
   let schema: Schema | undefined;
   
-  const inventoryStr = payload.inventory.map(i => `- ${i.name} (KES ${i.cost}/${i.unit})`).join("\n");
+  // Create a simplified inventory string to save tokens
+  const inventoryStr = payload.inventory.map(i => `- ${i.name} (${i.cost} KES)`).join("\n");
 
   switch (action) {
     case 'suggest_meal':
       prompt = `
         ACTION: suggest_meal
-        User Profile:
-        - Daily Budget: KES ${payload.preferences.budget}
-        - Meals/Day: ${payload.preferences.mealsPerDay}
-        - Diet Type: ${payload.preferences.dietType}
-        - Current Time: ${payload.context.currentTime}
-        - Requested Meal Type: ${payload.context.mealType}
+        Budget: KES ${payload.preferences.budget}
+        Diet: ${payload.preferences.dietType}
+        Time: ${payload.context.currentTime}
+        Type: ${payload.context.mealType}
+        Inventory: ${inventoryStr}
         
-        Inventory:
-        ${inventoryStr}
-
-        Task: Suggest a single meal suitable for a Kenyan context.
-        Rules:
-        - Suggest local dishes (e.g., Ugali & Sukuma, Githeri, Chai & Mandazi) where appropriate.
-        - Prefer inventory items.
-        - Respect daily budget in KES.
+        Task: Suggest ONE meal for a Kenyan user. 
+        Focus on affordability and using inventory.
       `;
       schema = mealResponseSchema;
       break;
@@ -192,37 +174,33 @@ export const runAIAction = async (
     case 'weekly_plan':
       prompt = `
         ACTION: weekly_plan
-        User Profile:
-        - Weekly Budget: KES ${payload.preferences.weeklyBudget}
-        - Meals/Day: ${payload.preferences.mealsPerDay}
-        - Diet Type: ${payload.preferences.dietType}
+        Weekly Budget: KES ${payload.preferences.weeklyBudget}
+        Meals/Day: ${payload.preferences.mealsPerDay}
+        Diet: ${payload.preferences.dietType}
+        Inventory: ${inventoryStr}
 
-        Inventory:
-        ${inventoryStr}
-
-        Task: Generate a 7-day meal plan for a Kenyan user.
+        Task: Generate a 7-day meal plan.
         Rules:
-        - Total must fit weekly budget (KES ${payload.preferences.weeklyBudget}).
-        - Avoid repeating same meal more than 2 days.
-        - Use local market prices for estimation.
+        1. Keep meals simple and realistic for Kenya.
+        2. ESTIMATE costs. Total cost doesn't need to be exact to the shilling, just a close estimate.
+        3. Do not fail if budget is tight; suggest cheaper portions (e.g. "Ugali & Skuma" or "Rice & Beans").
+        4. Day names: Mon, Tue, Wed, Thu, Fri, Sat, Sun.
       `;
       schema = weeklyPlanSchema;
       break;
 
     case 'shopping_list':
       const plan = payload.context.weeklyPlan as DailyPlan[];
-      const planStr = JSON.stringify(plan);
+      // Limit plan size in prompt to prevent token overflow
+      const planSummary = plan.map(d => `${d.day}: ${d.meals.map(m => m.name).join(', ')}`).join('; ');
+      
       prompt = `
         ACTION: shopping_list
-        Weekly Plan: ${planStr.substring(0, 10000)}...
-        
-        Inventory:
-        ${inventoryStr}
+        Plan Summary: ${planSummary}
+        Inventory: ${inventoryStr}
 
-        Task: Create a shopping list for a Kenyan supermarket/soko.
-        Rules:
-        - Include foods required by the plan but missing from inventory.
-        - Suggest cheaper alternatives (e.g., Loose maize vs Packet maize) if budget is tight.
+        Task: Create a shopping list.
+        Rules: List items needed for the plan that are NOT in inventory.
       `;
       schema = shoppingListSchema;
       break;
@@ -230,14 +208,8 @@ export const runAIAction = async (
     case 'analyze_inventory':
       prompt = `
         ACTION: analyze_inventory
-        Inventory:
-        ${inventoryStr}
-
-        Task: Analyze the inventory.
-        Rules:
-        - Suggest cheap Kenyan meal options using ONLY inventory.
-        - Suggest ways to extend current food (e.g., adding water to soup, using leftovers for fry).
-        - Recommend 3-5 cheap additions (e.g., Avocados, Bananas).
+        Inventory: ${inventoryStr}
+        Task: Analyze inventory for cheap meal ideas and extensions.
       `;
       schema = analysisSchema;
       break;
@@ -245,15 +217,9 @@ export const runAIAction = async (
     case 'get_analytics':
       prompt = `
         ACTION: get_analytics
-        Weekly Budget: KES ${payload.preferences.weeklyBudget}
+        Budget: KES ${payload.preferences.weeklyBudget}
         Inventory Value: KES ${payload.inventory.reduce((acc, item) => acc + item.cost, 0)}
-
-        Task: Generate dummy analytic data for the dashboard.
-        Rules:
-        - Create a realistic spending trend for the last 7 days.
-        - Breakdown categories (Grains, Veggies, Protein, etc.).
-        - Predict savings based on efficient cooking.
-        - Give 2-3 price alerts for Kenyan market (e.g., "Tomato prices rising in Nairobi").
+        Task: Generate dummy analytics data for spending trends and price alerts in Kenya.
       `;
       schema = analyticsSchema;
       break;
@@ -267,12 +233,18 @@ export const runAIAction = async (
         responseMimeType: "application/json",
         responseSchema: schema,
         systemInstruction: getSystemInstruction(),
+        // Increased token limit for large JSON responses like Weekly Plan
+        maxOutputTokens: 4000, 
       },
     });
 
     const text = response.text;
     if (!text) throw new Error("No response from AI");
-    return JSON.parse(text);
+    
+    // Clean up potential markdown code blocks if the model adds them despite instructions
+    const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    
+    return JSON.parse(cleanText);
   } catch (error) {
     console.error(`Gemini API Error [${action}]:`, error);
     throw error;
