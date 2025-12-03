@@ -196,44 +196,37 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen relative text-slate-200 selection:bg-emerald-500/30 font-sans">
+    <div className="min-h-screen relative text-slate-800 selection:bg-emerald-100 font-sans bg-slate-50">
       
-      {/* Ambient Background Effects */}
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-emerald-900/20 rounded-full blur-[120px] animate-float"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-900/20 rounded-full blur-[120px] animate-pulse-slow"></div>
-      </div>
-
       {/* Onboarding Overlay */}
       {showOnboarding && <Onboarding onComplete={handleOnboardingComplete} />}
 
-      {/* Glass Header */}
-      <header className="fixed top-0 left-0 right-0 z-40 glass-panel border-b-0 border-b-white/5 shadow-lg shadow-black/20">
+      {/* Header */}
+      <header className="fixed top-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2 group">
             <div className="relative">
-              <div className="absolute inset-0 bg-emerald-500 blur rounded-lg opacity-40 group-hover:opacity-60 transition-opacity"></div>
-              <div className="bg-slate-900/80 p-1.5 rounded-lg relative border border-emerald-500/30">
-                <ChefHat size={20} className="text-emerald-400" />
+              <div className="bg-emerald-50 p-1.5 rounded-lg relative border border-emerald-100">
+                <ChefHat size={20} className="text-emerald-600" />
               </div>
             </div>
             <div>
-              <h1 className="text-lg font-bold tracking-tight text-white leading-none">Meal<span className="text-emerald-400 neon-text-emerald">Mind</span></h1>
-              <span className="text-[10px] text-emerald-500 font-bold tracking-wider uppercase ml-0.5">Kenya</span>
+              <h1 className="text-lg font-bold tracking-tight text-slate-900 leading-none">Meal<span className="text-emerald-600">Mind</span></h1>
+              <span className="text-[10px] text-emerald-600 font-bold tracking-wider uppercase ml-0.5">Kenya</span>
             </div>
           </div>
           
           <div className="flex items-center gap-3">
              <div className="hidden sm:block text-right">
-                <p className="text-xs font-bold text-slate-200">{user.name}</p>
+                <p className="text-xs font-bold text-slate-700">{user.name}</p>
                 <div className="flex items-center justify-end gap-1">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                  <p className="text-[10px] text-emerald-500">Online</p>
+                  <p className="text-[10px] text-emerald-600">Online</p>
                 </div>
              </div>
              <button 
                onClick={handleLogout} 
-               className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-white/5 transition-all border border-transparent hover:border-white/5"
+               className="p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
              >
                 <LogOut size={18} />
              </button>
@@ -244,7 +237,7 @@ const App: React.FC = () => {
       {/* Main Content */}
       <main className="relative z-10 flex-1 max-w-3xl mx-auto w-full px-4 pt-20 pb-32">
         {error && (
-          <div className="mb-6 bg-red-500/10 border border-red-500/20 backdrop-blur text-red-200 px-4 py-3 rounded-xl text-sm font-medium animate-fade-in flex items-center gap-2">
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm font-medium animate-fade-in flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-red-500"></div>
             {error}
           </div>
@@ -253,10 +246,9 @@ const App: React.FC = () => {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
             <div className="relative mb-4">
-              <div className="absolute inset-0 bg-emerald-500 blur-xl opacity-30 animate-pulse"></div>
-              <Loader2 size={48} className="text-emerald-400 animate-spin relative z-10" />
+              <Loader2 size={48} className="text-emerald-600 animate-spin relative z-10" />
             </div>
-            <p className="text-lg font-medium text-emerald-100/80 animate-pulse">
+            <p className="text-lg font-medium text-slate-600 animate-pulse">
               Consulting AI Market Expert...
             </p>
           </div>
@@ -268,37 +260,34 @@ const App: React.FC = () => {
               ) : (
                 <div className="space-y-6 animate-slide-up">
                   {/* Preferences Panel */}
-                  <section className="glass-panel rounded-3xl p-6 shadow-2xl shadow-black/20">
+                  <section className="glass-panel p-6">
                     <div className="flex items-center gap-3 mb-6">
-                      <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                        <Settings size={20} className="text-emerald-400" />
+                      <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-100">
+                        <Settings size={20} className="text-emerald-600" />
                       </div>
-                      <h2 className="text-xl font-bold text-white">Daily Preferences</h2>
+                      <h2 className="text-xl font-bold text-slate-800">Daily Preferences</h2>
                     </div>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
                        <div className="group">
-                          <label className="text-xs font-bold text-emerald-500/80 uppercase tracking-wider mb-2 block">Daily Budget (KES)</label>
-                          <div className="relative">
-                            <input 
-                              type="number" 
-                              value={preferences.budget} 
-                              onChange={(e) => handlePreferenceChange('budget', e.target.value)} 
-                              className="w-full pl-4 pr-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-xl focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 outline-none text-white transition-all font-mono"
-                            />
-                            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity"></div>
-                          </div>
+                          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Daily Budget (KES)</label>
+                          <input 
+                            type="number" 
+                            value={preferences.budget} 
+                            onChange={(e) => handlePreferenceChange('budget', e.target.value)} 
+                            className="w-full pl-4 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none text-slate-800 transition-all font-mono shadow-sm"
+                          />
                        </div>
                        
                        <div>
-                          <label className="text-xs font-bold text-emerald-500/80 uppercase tracking-wider mb-2 block">Meals / Day</label>
+                          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Meals / Day</label>
                           <div className="relative">
                             <select 
                               value={preferences.mealsPerDay} 
                               onChange={(e) => handlePreferenceChange('mealsPerDay', e.target.value)} 
-                              className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white outline-none focus:border-emerald-500/50 appearance-none cursor-pointer hover:bg-slate-800/50 transition-colors"
+                              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 appearance-none cursor-pointer hover:bg-slate-50 transition-colors shadow-sm"
                             >
-                              {[1,2,3,4,5].map(n => <option key={n} value={n} className="bg-slate-900">{n} Meals</option>)}
+                              {[1,2,3,4,5].map(n => <option key={n} value={n}>{n} Meals</option>)}
                             </select>
                             <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                               <span className="text-xs">▼</span>
@@ -307,14 +296,14 @@ const App: React.FC = () => {
                        </div>
                        
                        <div className="sm:col-span-2">
-                          <label className="text-xs font-bold text-emerald-500/80 uppercase tracking-wider mb-2 block">Diet Style</label>
+                          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Diet Style</label>
                           <div className="relative">
                             <select 
                               value={preferences.dietType} 
                               onChange={(e) => handlePreferenceChange('dietType', e.target.value)} 
-                              className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white outline-none focus:border-emerald-500/50 appearance-none cursor-pointer hover:bg-slate-800/50 transition-colors"
+                              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 appearance-none cursor-pointer hover:bg-slate-50 transition-colors shadow-sm"
                             >
-                              {DIET_TYPES.map(t => <option key={t.value} value={t.value} className="bg-slate-900">{t.label}</option>)}
+                              {DIET_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                             </select>
                             <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                               <span className="text-xs">▼</span>
@@ -324,16 +313,16 @@ const App: React.FC = () => {
                     </div>
                     
                     <div className="space-y-3 mb-8">
-                       <label className="text-xs font-bold text-emerald-500/80 uppercase tracking-wider block">Meal Type</label>
+                       <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Meal Type</label>
                        <div className="flex flex-wrap gap-2">
                           {Object.values(MealType).map((type) => (
                             <button
                               key={type}
                               onClick={() => setSelectedMealType(type)}
-                              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 border ${
+                              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 border ${
                                 selectedMealType === type 
-                                ? 'bg-emerald-500 text-white border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.4)]' 
-                                : 'bg-slate-800/30 text-slate-400 border-transparent hover:bg-slate-800 hover:border-slate-700 hover:text-white'
+                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-200' 
+                                : 'bg-slate-100 text-slate-500 border-transparent hover:bg-slate-200 hover:text-slate-800'
                               }`}
                             >
                               {type === MealType.AUTO ? 'Auto' : type}
@@ -344,11 +333,10 @@ const App: React.FC = () => {
 
                     <button 
                       onClick={handleSuggestMeal} 
-                      className="group relative w-full bg-emerald-500 text-white font-bold py-4 rounded-xl overflow-hidden transition-all hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:-translate-y-0.5 active:translate-y-0"
+                      className="group relative w-full bg-emerald-600 text-white font-bold py-4 rounded-xl overflow-hidden transition-all hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-200 hover:-translate-y-0.5 active:translate-y-0"
                     >
-                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out"></div>
                        <div className="flex items-center justify-center gap-2 relative z-10">
-                         <Sparkles size={20} className="animate-pulse" /> 
+                         <Sparkles size={20} /> 
                          <span>Generate Smart Meal</span>
                        </div>
                     </button>
@@ -360,25 +348,25 @@ const App: React.FC = () => {
             {currentView === 'week' && (
               <div className="space-y-6 animate-slide-up">
                 {!weeklyPlan && (
-                  <div className="glass-panel border-dashed border-2 border-indigo-500/30 p-8 rounded-3xl text-center">
-                    <div className="inline-flex p-4 rounded-full bg-indigo-500/10 mb-4 animate-float">
-                      <Calendar size={48} className="text-indigo-400" />
+                  <div className="glass-panel border-2 border-dashed border-indigo-200 p-8 text-center bg-indigo-50/50">
+                    <div className="inline-flex p-4 rounded-full bg-indigo-100 mb-4 animate-float">
+                      <Calendar size={48} className="text-indigo-600" />
                     </div>
-                    <h3 className="text-2xl font-bold text-white mb-2">Weekly Planner</h3>
-                    <p className="text-slate-400 mb-8 max-w-md mx-auto">Generate a complete 7-day budget meal plan using AI market intelligence.</p>
+                    <h3 className="text-2xl font-bold text-slate-800 mb-2">Weekly Planner</h3>
+                    <p className="text-slate-500 mb-8 max-w-md mx-auto">Generate a complete 7-day budget meal plan using AI market intelligence.</p>
                     
                     <div className="max-w-xs mx-auto mb-6">
-                      <label className="block text-xs font-bold text-indigo-400 uppercase text-left mb-2 pl-1">Weekly Budget (KES)</label>
+                      <label className="block text-xs font-bold text-indigo-600 uppercase text-left mb-2 pl-1">Weekly Budget (KES)</label>
                       <input 
                         type="number" 
                         value={preferences.weeklyBudget} 
                         onChange={(e) => handlePreferenceChange('weeklyBudget', e.target.value)} 
-                        className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-indigo-500/30 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-mono text-center text-lg" 
+                        className="w-full px-4 py-3 rounded-xl bg-white border border-indigo-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all font-mono text-center text-lg shadow-sm" 
                       />
                     </div>
                     <button 
                       onClick={handleWeeklyPlan} 
-                      className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-500 transition-all hover:shadow-[0_0_20px_rgba(99,102,241,0.4)]"
+                      className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
                     >
                       Generate Week Plan
                     </button>
@@ -386,7 +374,7 @@ const App: React.FC = () => {
                 )}
                 {weeklyPlan && <WeeklyPlanView data={weeklyPlan} />}
                 {weeklyPlan && (
-                  <button onClick={handleWeeklyPlan} className="w-full py-4 text-indigo-400 font-medium hover:text-indigo-300 hover:bg-indigo-500/10 rounded-xl transition-all border border-transparent hover:border-indigo-500/20">
+                  <button onClick={handleWeeklyPlan} className="w-full py-4 text-indigo-600 font-medium hover:text-indigo-700 hover:bg-indigo-50 rounded-xl transition-all border border-transparent hover:border-indigo-100">
                     Regenerate Plan
                   </button>
                 )}
@@ -396,16 +384,16 @@ const App: React.FC = () => {
             {currentView === 'shop' && (
               <div className="space-y-6 animate-slide-up">
                  {!shoppingList && (
-                   <div className="glass-panel border-dashed border-2 border-orange-500/30 p-8 rounded-3xl text-center">
-                     <div className="inline-flex p-4 rounded-full bg-orange-500/10 mb-4 animate-float">
-                       <ShoppingCart size={48} className="text-orange-400" />
+                   <div className="glass-panel border-2 border-dashed border-orange-200 p-8 text-center bg-orange-50/50">
+                     <div className="inline-flex p-4 rounded-full bg-orange-100 mb-4 animate-float">
+                       <ShoppingCart size={48} className="text-orange-600" />
                      </div>
-                     <h3 className="text-2xl font-bold text-white mb-2">Smart Shopping List</h3>
-                     <p className="text-slate-400 mb-8">Auto-generate what you need to buy based on your plan and what you already have.</p>
+                     <h3 className="text-2xl font-bold text-slate-800 mb-2">Smart Shopping List</h3>
+                     <p className="text-slate-500 mb-8">Auto-generate what you need to buy based on your plan and what you already have.</p>
                      <button 
                        onClick={handleShoppingList} 
                        disabled={!weeklyPlan} 
-                       className="bg-orange-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-[0_0_20px_rgba(249,115,22,0.4)]"
+                       className="bg-orange-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-orange-200"
                      >
                        {weeklyPlan ? "Create List" : "Generate Plan First"}
                      </button>
@@ -421,7 +409,7 @@ const App: React.FC = () => {
                 <div className="flex justify-end">
                    <button 
                      onClick={handleAnalyzeInventory} 
-                     className="bg-purple-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-purple-500 transition-all hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] flex items-center gap-2"
+                     className="bg-purple-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-purple-700 transition-all shadow-lg shadow-purple-200 flex items-center gap-2"
                    >
                      <Sparkles size={18} /> AI Inventory Analysis
                    </button>
@@ -433,15 +421,15 @@ const App: React.FC = () => {
             {currentView === 'analytics' && (
               <div className="space-y-6 animate-slide-up">
                  {!analyticsData && (
-                    <div className="glass-panel border-dashed border-2 border-blue-500/30 p-8 rounded-3xl text-center">
-                       <div className="inline-flex p-4 rounded-full bg-blue-500/10 mb-4 animate-float">
-                         <BarChart3 size={48} className="text-blue-400" />
+                    <div className="glass-panel border-2 border-dashed border-blue-200 p-8 text-center bg-blue-50/50">
+                       <div className="inline-flex p-4 rounded-full bg-blue-100 mb-4 animate-float">
+                         <BarChart3 size={48} className="text-blue-600" />
                        </div>
-                       <h3 className="text-2xl font-bold text-white mb-2">Financial Insights</h3>
-                       <p className="text-slate-400 mb-8">Visualize your spending trends and get market price alerts.</p>
+                       <h3 className="text-2xl font-bold text-slate-800 mb-2">Financial Insights</h3>
+                       <p className="text-slate-500 mb-8">Visualize your spending trends and get market price alerts.</p>
                        <button 
                          onClick={handleAnalytics} 
-                         className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-500 transition-all hover:shadow-[0_0_20px_rgba(59,130,246,0.4)]"
+                         className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
                        >
                          Load Analytics
                        </button>
@@ -454,12 +442,9 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* Futuristic Bottom Navigation */}
+      {/* Bottom Navigation */}
       <nav className="fixed bottom-6 left-4 right-4 z-50">
-        <div className="max-w-xl mx-auto glass-panel rounded-2xl p-2 flex justify-between items-center shadow-2xl shadow-black/50 border border-white/10 relative overflow-hidden">
-           {/* Glow behind nav */}
-           <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-indigo-500/5 to-purple-500/5 blur-xl pointer-events-none"></div>
-
+        <div className="max-w-xl mx-auto glass-panel p-2 flex justify-between items-center shadow-2xl shadow-slate-300">
           <NavButton 
             active={currentView === 'meal'} 
             onClick={() => setCurrentView('meal')} 
@@ -504,11 +489,11 @@ const App: React.FC = () => {
 // Helper Component for Nav Items
 const NavButton: React.FC<{active: boolean, onClick: () => void, icon: React.ReactNode, label: string, color: string}> = ({ active, onClick, icon, label, color }) => {
   const activeClasses = {
-    emerald: 'text-emerald-400 bg-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.3)]',
-    indigo: 'text-indigo-400 bg-indigo-500/10 shadow-[0_0_15px_rgba(99,102,241,0.3)]',
-    orange: 'text-orange-400 bg-orange-500/10 shadow-[0_0_15px_rgba(249,115,22,0.3)]',
-    purple: 'text-purple-400 bg-purple-500/10 shadow-[0_0_15px_rgba(168,85,247,0.3)]',
-    blue: 'text-blue-400 bg-blue-500/10 shadow-[0_0_15px_rgba(59,130,246,0.3)]',
+    emerald: 'text-emerald-600 bg-emerald-50',
+    indigo: 'text-indigo-600 bg-indigo-50',
+    orange: 'text-orange-600 bg-orange-50',
+    purple: 'text-purple-600 bg-purple-50',
+    blue: 'text-blue-600 bg-blue-50',
   };
 
   return (
@@ -517,7 +502,7 @@ const NavButton: React.FC<{active: boolean, onClick: () => void, icon: React.Rea
       className={`flex flex-col items-center gap-1 p-3 rounded-xl w-full transition-all duration-300 relative overflow-hidden ${
         active 
           ? activeClasses[color as keyof typeof activeClasses]
-          : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+          : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
       }`}
     >
       <div className={`transition-transform duration-300 ${active ? 'scale-110' : ''}`}>
@@ -526,7 +511,6 @@ const NavButton: React.FC<{active: boolean, onClick: () => void, icon: React.Rea
       <span className={`text-[10px] font-bold uppercase tracking-wider ${active ? 'opacity-100' : 'opacity-0 scale-0 hidden sm:block'} transition-all`}>
         {label}
       </span>
-      {active && <div className={`absolute bottom-0 w-8 h-1 rounded-t-full bg-${color}-500 blur-[2px]`}></div>}
     </button>
   )
 }

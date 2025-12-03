@@ -16,7 +16,6 @@
             animation: {
               'fade-in': 'fadeIn 0.5s ease-out',
               'slide-up': 'slideUp 0.5s ease-out',
-              'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
               'float': 'float 6s ease-in-out infinite',
             },
             keyframes: {
@@ -40,29 +39,17 @@
     <style>
       body {
         font-family: 'Outfit', sans-serif;
-        background-color: #020617; /* Slate 950 */
-        color: #e2e8f0;
+        background-color: #f8fafc; /* Slate 50 */
+        color: #1e293b; /* Slate 800 */
         overflow-x: hidden;
       }
       
-      /* Glassmorphism Utilities */
+      /* Clean Card Utilities */
       .glass-panel {
-        background: rgba(15, 23, 42, 0.6);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-      }
-      
-      .glass-card {
-        background: rgba(30, 41, 59, 0.4);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-      }
-
-      /* Neon Glows */
-      .neon-text-emerald {
-        text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+        background: #ffffff;
+        border-radius: 1.5rem; /* rounded-3xl */
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+        border: 1px solid #e2e8f0;
       }
       
       /* Custom Scrollbar */
@@ -70,14 +57,14 @@
         width: 6px;
       }
       ::-webkit-scrollbar-track {
-        background: #0f172a;
+        background: #f1f5f9;
       }
       ::-webkit-scrollbar-thumb {
-        background: #334155;
+        background: #cbd5e1;
         border-radius: 10px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #10b981;
+        background: #94a3b8;
       }
     </style>
   <script type="importmap">
