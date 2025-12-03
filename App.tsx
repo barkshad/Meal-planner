@@ -18,6 +18,7 @@ import { WeeklyPlanView, ShoppingListView, InventoryAnalysisView } from './compo
 import { SplashScreen } from './components/SplashScreen';
 import { AuthView } from './components/AuthView';
 import { AnalyticsView } from './components/AnalyticsView';
+import { Onboarding } from './components/Onboarding';
 import { runAIAction } from './services/geminiService';
 import { ChefHat, Loader2, Home, Calendar, ShoppingCart, Archive, Wallet, Coffee, Settings, LogOut, BarChart3 } from 'lucide-react';
 
@@ -26,6 +27,7 @@ type ViewMode = 'meal' | 'week' | 'shop' | 'pantry' | 'analytics';
 const App: React.FC = () => {
   // --- App State ---
   const [showSplash, setShowSplash] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
 
   // --- Main Logic State ---
@@ -49,20 +51,37 @@ const App: React.FC = () => {
   useEffect(() => {
     const savedUser = localStorage.getItem('mealmind_user');
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      const parsedUser = JSON.parse(savedUser);
+      setUser(parsedUser);
+      checkOnboardingStatus(parsedUser.email);
     }
   }, []);
+
+  const checkOnboardingStatus = (email: string) => {
+    const hasOnboarded = localStorage.getItem(`mealmind_onboarded_${email}`);
+    if (!hasOnboarded) {
+      setShowOnboarding(true);
+    }
+  };
 
   // --- Handlers ---
 
   const handleLogin = (userProfile: UserProfile) => {
     setUser(userProfile);
     setPreferences(userProfile.preferences);
+    checkOnboardingStatus(userProfile.email);
   };
 
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('mealmind_user');
+  };
+
+  const handleOnboardingComplete = () => {
+    if (user) {
+      localStorage.setItem(`mealmind_onboarded_${user.email}`, 'true');
+    }
+    setShowOnboarding(false);
   };
 
   const handlePreferenceChange = (field: keyof UserPreferences, value: any) => {
@@ -178,144 +197,11 @@ const App: React.FC = () => {
     return <AuthView onLogin={handleLogin} />;
   }
 
-  const renderContent = () => {
-    if (loading) {
-      return (
-        <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
-          <Loader2 size={48} className="text-emerald-600 animate-spin mb-4" />
-          <p className="text-lg font-medium text-slate-700">Analyzing Market Prices...</p>
-        </div>
-      );
-    }
-
-    switch (currentView) {
-      case 'meal':
-        return mealResult ? (
-          <ResultCard data={mealResult} onReset={() => setMealResult(null)} />
-        ) : (
-          <div className="space-y-6 animate-fade-in">
-            {/* Preferences */}
-            <section className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-              <div className="flex items-center gap-2 mb-4 text-slate-800">
-                <Settings size={20} className="text-emerald-500" />
-                <h2 className="text-xl font-semibold">Preferences</h2>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                 <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase">Daily Budget (KES)</label>
-                    <input type="number" value={preferences.budget} onChange={(e) => handlePreferenceChange('budget', e.target.value)} className="w-full mt-1 px-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
-                 </div>
-                 <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase">Meals / Day</label>
-                    <select value={preferences.mealsPerDay} onChange={(e) => handlePreferenceChange('mealsPerDay', e.target.value)} className="w-full mt-1 px-4 py-2 bg-slate-50 border rounded-lg outline-none">
-                      {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
-                    </select>
-                 </div>
-                 <div className="sm:col-span-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Diet Type</label>
-                    <select value={preferences.dietType} onChange={(e) => handlePreferenceChange('dietType', e.target.value)} className="w-full mt-1 px-4 py-2 bg-slate-50 border rounded-lg outline-none">
-                      {DIET_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                    </select>
-                 </div>
-              </div>
-              
-              <div className="space-y-2">
-                 <label className="text-xs font-bold text-slate-500 uppercase">Meal Type</label>
-                 <div className="flex flex-wrap gap-2">
-                    {Object.values(MealType).map((type) => (
-                      <button
-                        key={type}
-                        onClick={() => setSelectedMealType(type)}
-                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${selectedMealType === type ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}
-                      >
-                        {type === MealType.AUTO ? 'Auto' : type}
-                      </button>
-                    ))}
-                 </div>
-              </div>
-
-              <button onClick={handleSuggestMeal} className="w-full mt-6 bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-200">
-                 <Coffee size={20} /> Suggest Meal
-              </button>
-            </section>
-          </div>
-        );
-
-      case 'week':
-        return (
-          <div className="space-y-6">
-            {!weeklyPlan && (
-              <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-2xl text-center">
-                <Calendar size={48} className="mx-auto text-indigo-400 mb-4" />
-                <h3 className="text-lg font-bold text-indigo-900">Plan your week</h3>
-                <p className="text-indigo-700 mb-6 text-sm">Generate a 7-day meal plan based on your weekly budget of KES {preferences.weeklyBudget}.</p>
-                <div className="max-w-xs mx-auto mb-4">
-                  <label className="block text-xs font-bold text-indigo-400 uppercase text-left mb-1">Weekly Budget (KES)</label>
-                  <input type="number" value={preferences.weeklyBudget} onChange={(e) => handlePreferenceChange('weeklyBudget', e.target.value)} className="w-full px-4 py-2 rounded-lg border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                </div>
-                <button onClick={handleWeeklyPlan} className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-colors">Generate Plan</button>
-              </div>
-            )}
-            {weeklyPlan && <WeeklyPlanView data={weeklyPlan} />}
-            {weeklyPlan && (
-              <button onClick={handleWeeklyPlan} className="w-full py-3 text-indigo-600 font-medium hover:bg-indigo-50 rounded-xl transition-colors">
-                Regenerate Plan
-              </button>
-            )}
-          </div>
-        );
-
-      case 'shop':
-        return (
-          <div className="space-y-6">
-             {!shoppingList && (
-               <div className="bg-orange-50 border border-orange-100 p-6 rounded-2xl text-center">
-                 <ShoppingCart size={48} className="mx-auto text-orange-400 mb-4" />
-                 <h3 className="text-lg font-bold text-orange-900">Shopping List</h3>
-                 <p className="text-orange-700 mb-6 text-sm">Create a smart shopping list based on your weekly plan and current inventory.</p>
-                 <button onClick={handleShoppingList} disabled={!weeklyPlan} className="bg-orange-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                   {weeklyPlan ? "Create List" : "Generate Weekly Plan First"}
-                 </button>
-               </div>
-             )}
-             {shoppingList && <ShoppingListView data={shoppingList} />}
-          </div>
-        );
-
-      case 'pantry':
-        return (
-          <div className="space-y-6">
-            <FoodManager items={inventory} setItems={setInventory} />
-            <div className="flex justify-end">
-               <button onClick={handleAnalyzeInventory} className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center gap-2">
-                 <Settings size={16} /> Analyze Inventory
-               </button>
-            </div>
-            {inventoryAnalysis && <InventoryAnalysisView data={inventoryAnalysis} />}
-          </div>
-        );
-        
-      case 'analytics':
-        return (
-          <div className="space-y-6">
-             {!analyticsData && (
-                <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-2xl text-center">
-                   <BarChart3 size={48} className="mx-auto text-emerald-400 mb-4" />
-                   <h3 className="text-lg font-bold text-emerald-900">Your Insights</h3>
-                   <p className="text-emerald-700 mb-6 text-sm">Analyze your spending habits and get market price alerts.</p>
-                   <button onClick={handleAnalytics} className="bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-emerald-700 transition-colors">
-                     Load Analytics
-                   </button>
-                </div>
-             )}
-             {analyticsData && <AnalyticsView data={analyticsData} />}
-          </div>
-        );
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-inter">
+    <div className="min-h-screen bg-slate-50 flex flex-col font-inter relative">
+      {/* Onboarding Overlay */}
+      {showOnboarding && <Onboarding onComplete={handleOnboardingComplete} />}
+
       {/* Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-20">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -348,7 +234,135 @@ const App: React.FC = () => {
             {error}
           </div>
         )}
-        {renderContent()}
+        
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
+            <Loader2 size={48} className="text-emerald-600 animate-spin mb-4" />
+            <p className="text-lg font-medium text-slate-700">Analyzing Market Prices...</p>
+          </div>
+        ) : (
+          <>
+            {currentView === 'meal' && (
+              mealResult ? (
+                <ResultCard data={mealResult} onReset={() => setMealResult(null)} />
+              ) : (
+                <div className="space-y-6 animate-fade-in">
+                  {/* Preferences */}
+                  <section className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                    <div className="flex items-center gap-2 mb-4 text-slate-800">
+                      <Settings size={20} className="text-emerald-500" />
+                      <h2 className="text-xl font-semibold">Preferences</h2>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                       <div>
+                          <label className="text-xs font-bold text-slate-500 uppercase">Daily Budget (KES)</label>
+                          <input type="number" value={preferences.budget} onChange={(e) => handlePreferenceChange('budget', e.target.value)} className="w-full mt-1 px-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
+                       </div>
+                       <div>
+                          <label className="text-xs font-bold text-slate-500 uppercase">Meals / Day</label>
+                          <select value={preferences.mealsPerDay} onChange={(e) => handlePreferenceChange('mealsPerDay', e.target.value)} className="w-full mt-1 px-4 py-2 bg-slate-50 border rounded-lg outline-none">
+                            {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
+                          </select>
+                       </div>
+                       <div className="sm:col-span-2">
+                          <label className="text-xs font-bold text-slate-500 uppercase">Diet Type</label>
+                          <select value={preferences.dietType} onChange={(e) => handlePreferenceChange('dietType', e.target.value)} className="w-full mt-1 px-4 py-2 bg-slate-50 border rounded-lg outline-none">
+                            {DIET_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                          </select>
+                       </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                       <label className="text-xs font-bold text-slate-500 uppercase">Meal Type</label>
+                       <div className="flex flex-wrap gap-2">
+                          {Object.values(MealType).map((type) => (
+                            <button
+                              key={type}
+                              onClick={() => setSelectedMealType(type)}
+                              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${selectedMealType === type ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}
+                            >
+                              {type === MealType.AUTO ? 'Auto' : type}
+                            </button>
+                          ))}
+                       </div>
+                    </div>
+
+                    <button onClick={handleSuggestMeal} className="w-full mt-6 bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-200">
+                       <Coffee size={20} /> Suggest Meal
+                    </button>
+                  </section>
+                </div>
+              )
+            )}
+
+            {currentView === 'week' && (
+              <div className="space-y-6">
+                {!weeklyPlan && (
+                  <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-2xl text-center">
+                    <Calendar size={48} className="mx-auto text-indigo-400 mb-4" />
+                    <h3 className="text-lg font-bold text-indigo-900">Plan your week</h3>
+                    <p className="text-indigo-700 mb-6 text-sm">Generate a 7-day meal plan based on your weekly budget of KES {preferences.weeklyBudget}.</p>
+                    <div className="max-w-xs mx-auto mb-4">
+                      <label className="block text-xs font-bold text-indigo-400 uppercase text-left mb-1">Weekly Budget (KES)</label>
+                      <input type="number" value={preferences.weeklyBudget} onChange={(e) => handlePreferenceChange('weeklyBudget', e.target.value)} className="w-full px-4 py-2 rounded-lg border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    </div>
+                    <button onClick={handleWeeklyPlan} className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-colors">Generate Plan</button>
+                  </div>
+                )}
+                {weeklyPlan && <WeeklyPlanView data={weeklyPlan} />}
+                {weeklyPlan && (
+                  <button onClick={handleWeeklyPlan} className="w-full py-3 text-indigo-600 font-medium hover:bg-indigo-50 rounded-xl transition-colors">
+                    Regenerate Plan
+                  </button>
+                )}
+              </div>
+            )}
+
+            {currentView === 'shop' && (
+              <div className="space-y-6">
+                 {!shoppingList && (
+                   <div className="bg-orange-50 border border-orange-100 p-6 rounded-2xl text-center">
+                     <ShoppingCart size={48} className="mx-auto text-orange-400 mb-4" />
+                     <h3 className="text-lg font-bold text-orange-900">Shopping List</h3>
+                     <p className="text-orange-700 mb-6 text-sm">Create a smart shopping list based on your weekly plan and current inventory.</p>
+                     <button onClick={handleShoppingList} disabled={!weeklyPlan} className="bg-orange-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                       {weeklyPlan ? "Create List" : "Generate Weekly Plan First"}
+                     </button>
+                   </div>
+                 )}
+                 {shoppingList && <ShoppingListView data={shoppingList} />}
+              </div>
+            )}
+
+            {currentView === 'pantry' && (
+              <div className="space-y-6">
+                <FoodManager items={inventory} setItems={setInventory} />
+                <div className="flex justify-end">
+                   <button onClick={handleAnalyzeInventory} className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center gap-2">
+                     <Settings size={16} /> Analyze Inventory
+                   </button>
+                </div>
+                {inventoryAnalysis && <InventoryAnalysisView data={inventoryAnalysis} />}
+              </div>
+            )}
+            
+            {currentView === 'analytics' && (
+              <div className="space-y-6">
+                 {!analyticsData && (
+                    <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-2xl text-center">
+                       <BarChart3 size={48} className="mx-auto text-emerald-400 mb-4" />
+                       <h3 className="text-lg font-bold text-emerald-900">Your Insights</h3>
+                       <p className="text-emerald-700 mb-6 text-sm">Analyze your spending habits and get market price alerts.</p>
+                       <button onClick={handleAnalytics} className="bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-emerald-700 transition-colors">
+                         Load Analytics
+                       </button>
+                    </div>
+                 )}
+                 {analyticsData && <AnalyticsView data={analyticsData} />}
+              </div>
+            )}
+          </>
+        )}
       </main>
 
       {/* Bottom Navigation */}
