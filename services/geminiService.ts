@@ -62,7 +62,7 @@ const weeklyPlanSchema: Schema = {
           },
           day_total: { type: Type.NUMBER }
         },
-        required: ["day", "meals", "day_total"],
+        required: ["day", "meals"], // Removed day_total from required to be more lenient
       }
     },
     total_cost: { type: Type.NUMBER },
@@ -133,7 +133,7 @@ You are the backend intelligence for MealMind Kenya.
 Currency: KES (Kenyan Shilling).
 Context: Nairobi / Urban Kenya.
 Prices: Use realistic current Nairobi market prices (e.g., Ugali ~200KES/2kg, Eggs ~15-20KES, Skuma ~20-50KES).
-Output: STRICT JSON. Do not include markdown code blocks.
+Output: STRICT JSON.
 `;
 
 export const runAIAction = async (
@@ -147,7 +147,9 @@ export const runAIAction = async (
   if (!apiKey) throw new Error("API Key is missing.");
 
   const ai = new GoogleGenAI({ apiKey });
-  const modelId = "gemini-2.5-flash"; 
+  
+  // Use gemini-1.5-flash for better stability with large JSON responses
+  const modelId = "gemini-1.5-flash"; 
 
   let prompt = "";
   let schema: Schema | undefined;
@@ -179,12 +181,12 @@ export const runAIAction = async (
         Diet: ${payload.preferences.dietType}
         Inventory: ${inventoryStr}
 
-        Task: Generate a 7-day meal plan.
-        Rules:
-        1. Keep meals simple and realistic for Kenya.
-        2. ESTIMATE costs. Total cost doesn't need to be exact to the shilling, just a close estimate.
-        3. Do not fail if budget is tight; suggest cheaper portions (e.g. "Ugali & Skuma" or "Rice & Beans").
-        4. Day names: Mon, Tue, Wed, Thu, Fri, Sat, Sun.
+        Task: Generate a 7-day meal plan (Mon-Sun).
+        Requirements:
+        1. 3 simple meals per day (Breakfast, Lunch, Dinner) unless Meals/Day says otherwise.
+        2. Use Kenyan foods (Ugali, Skuma, Chapati, Githeri, Rice, Beans).
+        3. Estimate costs in KES.
+        4. Return STRICT JSON matching the schema.
       `;
       schema = weeklyPlanSchema;
       break;
@@ -234,7 +236,7 @@ export const runAIAction = async (
         responseSchema: schema,
         systemInstruction: getSystemInstruction(),
         // Increased token limit for large JSON responses like Weekly Plan
-        maxOutputTokens: 4000, 
+        maxOutputTokens: 8000, 
       },
     });
 
