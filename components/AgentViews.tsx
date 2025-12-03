@@ -20,7 +20,7 @@ export const WeeklyPlanView: React.FC<ViewProps<WeeklyPlanResponse>> = ({ data }
           <div className="text-right">
             <p className="text-xs text-slate-500 uppercase">Total Cost</p>
             <p className={`font-bold ${data.within_budget ? 'text-green-600' : 'text-orange-500'}`}>
-              ${data.total_cost.toFixed(2)}
+              KES {data.total_cost}
             </p>
           </div>
         </div>
@@ -30,7 +30,7 @@ export const WeeklyPlanView: React.FC<ViewProps<WeeklyPlanResponse>> = ({ data }
             <div key={i} className="border-b border-slate-100 last:border-0 pb-4 last:pb-0">
               <div className="flex justify-between items-center mb-2">
                 <h3 className="font-semibold text-slate-800">{day.day}</h3>
-                <span className="text-xs font-medium text-slate-500">${day.day_total.toFixed(2)}</span>
+                <span className="text-xs font-medium text-slate-500">KES {day.day_total}</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {day.meals.map((meal, j) => (
@@ -57,7 +57,7 @@ export const ShoppingListView: React.FC<ViewProps<ShoppingListResponse>> = ({ da
           <h2 className="text-xl font-bold">Shopping List</h2>
         </div>
         <div className="bg-orange-50 px-3 py-1 rounded-full">
-           <span className="text-xs font-bold text-orange-700">Est. ${data.estimated_total_cost.toFixed(2)}</span>
+           <span className="text-xs font-bold text-orange-700">Est. KES {data.estimated_total_cost}</span>
         </div>
       </div>
 

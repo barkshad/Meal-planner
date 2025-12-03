@@ -37,6 +37,19 @@ export interface UserPreferences {
   weeklyBudget: number;
 }
 
+// User & Auth
+export interface UserProfile {
+  name: string;
+  email: string;
+  preferences: UserPreferences;
+  savedPlans: WeeklyPlanResponse[];
+}
+
+export interface AuthState {
+  isAuthenticated: boolean;
+  user: UserProfile | null;
+}
+
 // New Types for Extended Actions
 
 export interface WeeklyMeal {
@@ -72,4 +85,12 @@ export interface InventoryAnalysisResponse {
   cheap_meal_options: string[];
   ways_to_extend_inventory: string[];
   recommended_additions: string[];
+}
+
+// Analytics
+export interface AnalyticsData {
+  weekly_spending_trend: { day: string; amount: number }[];
+  category_breakdown: { category: string; percentage: number }[];
+  projected_savings: number;
+  price_alerts: string[];
 }

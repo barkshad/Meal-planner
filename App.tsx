@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FoodItem, 
   MealResponse, 
@@ -7,28 +7,32 @@ import {
   UserPreferences, 
   WeeklyPlanResponse, 
   ShoppingListResponse, 
-  InventoryAnalysisResponse 
+  InventoryAnalysisResponse,
+  UserProfile,
+  AnalyticsData
 } from './types';
-import { INITIAL_FOODS, DIET_TYPES } from './constants';
+import { INITIAL_FOODS, DIET_TYPES, DEFAULT_PREFERENCES } from './constants';
 import { FoodManager } from './components/FoodManager';
 import { ResultCard } from './components/ResultCard';
 import { WeeklyPlanView, ShoppingListView, InventoryAnalysisView } from './components/AgentViews';
+import { SplashScreen } from './components/SplashScreen';
+import { AuthView } from './components/AuthView';
+import { AnalyticsView } from './components/AnalyticsView';
 import { runAIAction } from './services/geminiService';
-import { ChefHat, Loader2, Home, Calendar, ShoppingCart, Archive, Wallet, Coffee, Settings } from 'lucide-react';
+import { ChefHat, Loader2, Home, Calendar, ShoppingCart, Archive, Wallet, Coffee, Settings, LogOut, BarChart3 } from 'lucide-react';
 
-type ViewMode = 'meal' | 'week' | 'shop' | 'pantry';
+type ViewMode = 'meal' | 'week' | 'shop' | 'pantry' | 'analytics';
 
 const App: React.FC = () => {
-  // --- State ---
+  // --- App State ---
+  const [showSplash, setShowSplash] = useState(true);
+  const [user, setUser] = useState<UserProfile | null>(null);
+
+  // --- Main Logic State ---
   const [currentView, setCurrentView] = useState<ViewMode>('meal');
   const [inventory, setInventory] = useState<FoodItem[]>(INITIAL_FOODS);
   
-  const [preferences, setPreferences] = useState<UserPreferences>({
-    budget: 15,
-    weeklyBudget: 100,
-    mealsPerDay: 3,
-    dietType: 'regular',
-  });
+  const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
   const [selectedMealType, setSelectedMealType] = useState<string>(MealType.AUTO);
   
   const [loading, setLoading] = useState(false);
@@ -39,8 +43,27 @@ const App: React.FC = () => {
   const [weeklyPlan, setWeeklyPlan] = useState<WeeklyPlanResponse | null>(null);
   const [shoppingList, setShoppingList] = useState<ShoppingListResponse | null>(null);
   const [inventoryAnalysis, setInventoryAnalysis] = useState<InventoryAnalysisResponse | null>(null);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+
+  // --- Initialization ---
+  useEffect(() => {
+    const savedUser = localStorage.getItem('mealmind_user');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+  }, []);
 
   // --- Handlers ---
+
+  const handleLogin = (userProfile: UserProfile) => {
+    setUser(userProfile);
+    setPreferences(userProfile.preferences);
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('mealmind_user');
+  };
 
   const handlePreferenceChange = (field: keyof UserPreferences, value: any) => {
     setPreferences((prev) => ({
@@ -64,7 +87,7 @@ const App: React.FC = () => {
       setMealResult(res);
     } catch (err) {
       console.error(err);
-      setError("Failed to suggest a meal. Please try again.");
+      setError("Failed to suggest a meal. Check your connection.");
     } finally {
       setLoading(false);
     }
@@ -73,7 +96,6 @@ const App: React.FC = () => {
   const handleWeeklyPlan = async () => {
     setLoading(true);
     setError(null);
-    // don't clear old plan immediately to avoid flash, or do if you prefer
     try {
       const res = await runAIAction('weekly_plan', {
         preferences,
@@ -127,15 +149,41 @@ const App: React.FC = () => {
       setLoading(false);
     }
   };
+  
+  const handleAnalytics = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Pass inventory and preferences to generate dummy analytics
+      const res = await runAIAction('get_analytics', {
+        preferences,
+        inventory,
+      });
+      setAnalyticsData(res);
+    } catch (err) {
+      console.error(err);
+      setError("Could not load analytics.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  // --- Render Helpers ---
+  // --- Render logic ---
+
+  if (showSplash) {
+    return <SplashScreen onComplete={() => setShowSplash(false)} />;
+  }
+
+  if (!user) {
+    return <AuthView onLogin={handleLogin} />;
+  }
 
   const renderContent = () => {
     if (loading) {
       return (
         <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
           <Loader2 size={48} className="text-emerald-600 animate-spin mb-4" />
-          <p className="text-lg font-medium text-slate-700">Consulting the intelligence engine...</p>
+          <p className="text-lg font-medium text-slate-700">Analyzing Market Prices...</p>
         </div>
       );
     }
@@ -154,7 +202,7 @@ const App: React.FC = () => {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                  <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase">Daily Budget</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase">Daily Budget (KES)</label>
                     <input type="number" value={preferences.budget} onChange={(e) => handlePreferenceChange('budget', e.target.value)} className="w-full mt-1 px-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
                  </div>
                  <div>
@@ -186,7 +234,7 @@ const App: React.FC = () => {
                  </div>
               </div>
 
-              <button onClick={handleSuggestMeal} className="w-full mt-6 bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition-all flex items-center justify-center gap-2">
+              <button onClick={handleSuggestMeal} className="w-full mt-6 bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-200">
                  <Coffee size={20} /> Suggest Meal
               </button>
             </section>
@@ -200,9 +248,9 @@ const App: React.FC = () => {
               <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-2xl text-center">
                 <Calendar size={48} className="mx-auto text-indigo-400 mb-4" />
                 <h3 className="text-lg font-bold text-indigo-900">Plan your week</h3>
-                <p className="text-indigo-700 mb-6 text-sm">Generate a 7-day meal plan based on your weekly budget of ${preferences.weeklyBudget}.</p>
+                <p className="text-indigo-700 mb-6 text-sm">Generate a 7-day meal plan based on your weekly budget of KES {preferences.weeklyBudget}.</p>
                 <div className="max-w-xs mx-auto mb-4">
-                  <label className="block text-xs font-bold text-indigo-400 uppercase text-left mb-1">Weekly Budget ($)</label>
+                  <label className="block text-xs font-bold text-indigo-400 uppercase text-left mb-1">Weekly Budget (KES)</label>
                   <input type="number" value={preferences.weeklyBudget} onChange={(e) => handlePreferenceChange('weeklyBudget', e.target.value)} className="w-full px-4 py-2 rounded-lg border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
                 <button onClick={handleWeeklyPlan} className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-colors">Generate Plan</button>
@@ -246,11 +294,28 @@ const App: React.FC = () => {
             {inventoryAnalysis && <InventoryAnalysisView data={inventoryAnalysis} />}
           </div>
         );
+        
+      case 'analytics':
+        return (
+          <div className="space-y-6">
+             {!analyticsData && (
+                <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-2xl text-center">
+                   <BarChart3 size={48} className="mx-auto text-emerald-400 mb-4" />
+                   <h3 className="text-lg font-bold text-emerald-900">Your Insights</h3>
+                   <p className="text-emerald-700 mb-6 text-sm">Analyze your spending habits and get market price alerts.</p>
+                   <button onClick={handleAnalytics} className="bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-emerald-700 transition-colors">
+                     Load Analytics
+                   </button>
+                </div>
+             )}
+             {analyticsData && <AnalyticsView data={analyticsData} />}
+          </div>
+        );
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-slate-50 flex flex-col font-inter">
       {/* Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-20">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -258,18 +323,28 @@ const App: React.FC = () => {
             <div className="bg-emerald-100 p-1.5 rounded-lg">
               <ChefHat size={20} />
             </div>
-            <h1 className="text-lg font-bold tracking-tight text-slate-900">MealMind</h1>
+            <div>
+              <h1 className="text-lg font-bold tracking-tight text-slate-900 leading-none">MealMind</h1>
+              <span className="text-[10px] text-emerald-600 font-bold tracking-wider">KENYA</span>
+            </div>
           </div>
-          <div className="text-[10px] font-bold tracking-wider px-2 py-1 bg-slate-900 text-white rounded uppercase">
-            Beta
+          
+          <div className="flex items-center gap-3">
+             <div className="hidden sm:block text-right">
+                <p className="text-xs font-bold text-slate-700">{user.name}</p>
+                <p className="text-[10px] text-slate-400">Basic Plan</p>
+             </div>
+             <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-500 transition-colors">
+                <LogOut size={18} />
+             </button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-6 pb-24">
+      <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-6 pb-28">
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-medium">
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-medium animate-fade-in">
             {error}
           </div>
         )}
@@ -277,7 +352,7 @@ const App: React.FC = () => {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 pb-safe z-30">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 pb-safe z-30 shadow-[0_-5px_10px_rgba(0,0,0,0.02)]">
         <div className="max-w-3xl mx-auto flex justify-around p-2">
           <button 
             onClick={() => setCurrentView('meal')}
@@ -308,7 +383,15 @@ const App: React.FC = () => {
             className={`flex flex-col items-center gap-1 p-2 rounded-xl w-full transition-colors ${currentView === 'pantry' ? 'text-purple-600 bg-purple-50' : 'text-slate-400 hover:bg-slate-50'}`}
           >
             <Archive size={20} />
-            <span className="text-[10px] font-bold uppercase">Pantry</span>
+            <span className="text-[10px] font-bold uppercase">Soko</span>
+          </button>
+          
+          <button 
+            onClick={() => setCurrentView('analytics')}
+            className={`flex flex-col items-center gap-1 p-2 rounded-xl w-full transition-colors ${currentView === 'analytics' ? 'text-blue-600 bg-blue-50' : 'text-slate-400 hover:bg-slate-50'}`}
+          >
+            <BarChart3 size={20} />
+            <span className="text-[10px] font-bold uppercase">Trends</span>
           </button>
         </div>
       </nav>

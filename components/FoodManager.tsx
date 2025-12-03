@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { FoodItem } from '../types';
 import { Trash2, Plus, Info } from 'lucide-react';
@@ -35,11 +36,11 @@ export const FoodManager: React.FC<FoodManagerProps> = ({ items, setItems }) => 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
       <div className="flex items-center gap-2 mb-4">
-        <h2 className="text-xl font-semibold text-slate-800">Your Kitchen</h2>
+        <h2 className="text-xl font-semibold text-slate-800">Your Kitchen (Soko)</h2>
         <div className="group relative">
            <Info size={16} className="text-slate-400 cursor-help" />
            <div className="absolute left-0 bottom-full mb-2 w-48 p-2 bg-slate-800 text-white text-xs rounded hidden group-hover:block z-10">
-             Add foods you have available and their estimated cost per serving.
+             Add foods you have available and their estimated cost per serving in KES.
            </div>
         </div>
       </div>
@@ -51,19 +52,19 @@ export const FoodManager: React.FC<FoodManagerProps> = ({ items, setItems }) => 
             type="text"
             value={newItemName}
             onChange={(e) => setNewItemName(e.target.value)}
-            placeholder="e.g. Tuna Can"
+            placeholder="e.g. Sukuma Wiki"
             className="w-full px-4 py-2 rounded-lg bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-slate-500 uppercase">Est. Cost ($)</label>
+          <label className="text-xs font-medium text-slate-500 uppercase">Est. Cost (KES)</label>
           <div className="flex gap-2">
             <input
               type="number"
               value={newItemCost}
               onChange={(e) => setNewItemCost(e.target.value)}
               placeholder="0.00"
-              step="0.01"
+              step="1"
               className="w-full px-4 py-2 rounded-lg bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
             <button
@@ -79,7 +80,7 @@ export const FoodManager: React.FC<FoodManagerProps> = ({ items, setItems }) => 
 
       <div className="max-h-60 overflow-y-auto space-y-2 pr-2">
         {items.length === 0 ? (
-          <p className="text-center text-slate-400 py-4">No items added yet. Add some basics!</p>
+          <p className="text-center text-slate-400 py-4">No items yet. Add your stock!</p>
         ) : (
           items.map((item) => (
             <div
@@ -88,7 +89,7 @@ export const FoodManager: React.FC<FoodManagerProps> = ({ items, setItems }) => 
             >
               <div>
                 <span className="font-medium text-slate-700">{item.name}</span>
-                <span className="text-xs text-slate-400 ml-2">${item.cost.toFixed(2)} / {item.unit}</span>
+                <span className="text-xs text-slate-400 ml-2">KES {item.cost} / {item.unit}</span>
               </div>
               <button
                 onClick={() => handleRemoveItem(item.id)}

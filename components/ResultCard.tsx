@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { MealResponse } from '../types';
 import { CheckCircle2, AlertCircle, Utensils, DollarSign, Clock } from 'lucide-react';
@@ -36,7 +37,7 @@ export const ResultCard: React.FC<ResultCardProps> = ({ data, onReset }) => {
                <div className="flex-1">
                  <div className="flex justify-between items-start">
                    <h3 className="font-semibold text-slate-800">{item.food}</h3>
-                   <span className="text-sm font-medium text-emerald-600">${item.estimated_cost.toFixed(2)}</span>
+                   <span className="text-sm font-medium text-emerald-600">KES {item.estimated_cost}</span>
                  </div>
                  <p className="text-sm text-slate-500 mt-1 leading-relaxed">{item.reason}</p>
                </div>
@@ -52,7 +53,7 @@ export const ResultCard: React.FC<ResultCardProps> = ({ data, onReset }) => {
             <div>
               <p className="text-xs text-slate-500 uppercase font-semibold">Total Cost</p>
               <p className={`text-lg font-bold ${data.within_budget ? 'text-green-700' : 'text-orange-600'}`}>
-                ${data.total_meal_cost.toFixed(2)}
+                KES {data.total_meal_cost}
               </p>
             </div>
           </div>
