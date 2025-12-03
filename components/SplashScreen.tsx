@@ -40,6 +40,11 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
       
       <p className="text-slate-500 text-sm mt-4 animate-pulse">Checking Nairobi Market Prices...</p>
       
+      {/* Developer Credit */}
+      <div className="absolute bottom-10 text-slate-600 text-xs font-medium tracking-wide opacity-80">
+        Built by Shadrack v1.0
+      </div>
+
       <style>{`
         @keyframes loading-bar {
           0% { width: 0%; transform: translateX(-100%); }
