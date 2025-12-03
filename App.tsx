@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   FoodItem, 
@@ -20,7 +19,7 @@ import { AuthView } from './components/AuthView';
 import { AnalyticsView } from './components/AnalyticsView';
 import { Onboarding } from './components/Onboarding';
 import { runAIAction } from './services/geminiService';
-import { ChefHat, Loader2, Home, Calendar, ShoppingCart, Archive, Wallet, Coffee, Settings, LogOut, BarChart3 } from 'lucide-react';
+import { ChefHat, Loader2, Home, Calendar, ShoppingCart, Archive, Wallet, Coffee, Settings, LogOut, BarChart3, Sparkles } from 'lucide-react';
 
 type ViewMode = 'meal' | 'week' | 'shop' | 'pantry' | 'analytics';
 
@@ -173,7 +172,6 @@ const App: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      // Pass inventory and preferences to generate dummy analytics
       const res = await runAIAction('get_analytics', {
         preferences,
         inventory,
@@ -198,29 +196,45 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-inter relative">
+    <div className="min-h-screen relative text-slate-200 selection:bg-emerald-500/30 font-sans">
+      
+      {/* Ambient Background Effects */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-emerald-900/20 rounded-full blur-[120px] animate-float"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-900/20 rounded-full blur-[120px] animate-pulse-slow"></div>
+      </div>
+
       {/* Onboarding Overlay */}
       {showOnboarding && <Onboarding onComplete={handleOnboardingComplete} />}
 
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-20">
+      {/* Glass Header */}
+      <header className="fixed top-0 left-0 right-0 z-40 glass-panel border-b-0 border-b-white/5 shadow-lg shadow-black/20">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-emerald-600">
-            <div className="bg-emerald-100 p-1.5 rounded-lg">
-              <ChefHat size={20} />
+          <div className="flex items-center gap-2 group">
+            <div className="relative">
+              <div className="absolute inset-0 bg-emerald-500 blur rounded-lg opacity-40 group-hover:opacity-60 transition-opacity"></div>
+              <div className="bg-slate-900/80 p-1.5 rounded-lg relative border border-emerald-500/30">
+                <ChefHat size={20} className="text-emerald-400" />
+              </div>
             </div>
             <div>
-              <h1 className="text-lg font-bold tracking-tight text-slate-900 leading-none">MealMind</h1>
-              <span className="text-[10px] text-emerald-600 font-bold tracking-wider">KENYA</span>
+              <h1 className="text-lg font-bold tracking-tight text-white leading-none">Meal<span className="text-emerald-400 neon-text-emerald">Mind</span></h1>
+              <span className="text-[10px] text-emerald-500 font-bold tracking-wider uppercase ml-0.5">Kenya</span>
             </div>
           </div>
           
           <div className="flex items-center gap-3">
              <div className="hidden sm:block text-right">
-                <p className="text-xs font-bold text-slate-700">{user.name}</p>
-                <p className="text-[10px] text-slate-400">Basic Plan</p>
+                <p className="text-xs font-bold text-slate-200">{user.name}</p>
+                <div className="flex items-center justify-end gap-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                  <p className="text-[10px] text-emerald-500">Online</p>
+                </div>
              </div>
-             <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-500 transition-colors">
+             <button 
+               onClick={handleLogout} 
+               className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-white/5 transition-all border border-transparent hover:border-white/5"
+             >
                 <LogOut size={18} />
              </button>
           </div>
@@ -228,17 +242,23 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-6 pb-28">
+      <main className="relative z-10 flex-1 max-w-3xl mx-auto w-full px-4 pt-20 pb-32">
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-medium animate-fade-in">
+          <div className="mb-6 bg-red-500/10 border border-red-500/20 backdrop-blur text-red-200 px-4 py-3 rounded-xl text-sm font-medium animate-fade-in flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-red-500"></div>
             {error}
           </div>
         )}
         
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
-            <Loader2 size={48} className="text-emerald-600 animate-spin mb-4" />
-            <p className="text-lg font-medium text-slate-700">Analyzing Market Prices...</p>
+            <div className="relative mb-4">
+              <div className="absolute inset-0 bg-emerald-500 blur-xl opacity-30 animate-pulse"></div>
+              <Loader2 size={48} className="text-emerald-400 animate-spin relative z-10" />
+            </div>
+            <p className="text-lg font-medium text-emerald-100/80 animate-pulse">
+              Consulting AI Market Expert...
+            </p>
           </div>
         ) : (
           <>
@@ -246,40 +266,75 @@ const App: React.FC = () => {
               mealResult ? (
                 <ResultCard data={mealResult} onReset={() => setMealResult(null)} />
               ) : (
-                <div className="space-y-6 animate-fade-in">
-                  {/* Preferences */}
-                  <section className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-                    <div className="flex items-center gap-2 mb-4 text-slate-800">
-                      <Settings size={20} className="text-emerald-500" />
-                      <h2 className="text-xl font-semibold">Preferences</h2>
+                <div className="space-y-6 animate-slide-up">
+                  {/* Preferences Panel */}
+                  <section className="glass-panel rounded-3xl p-6 shadow-2xl shadow-black/20">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                        <Settings size={20} className="text-emerald-400" />
+                      </div>
+                      <h2 className="text-xl font-bold text-white">Daily Preferences</h2>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                       <div>
-                          <label className="text-xs font-bold text-slate-500 uppercase">Daily Budget (KES)</label>
-                          <input type="number" value={preferences.budget} onChange={(e) => handlePreferenceChange('budget', e.target.value)} className="w-full mt-1 px-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+                       <div className="group">
+                          <label className="text-xs font-bold text-emerald-500/80 uppercase tracking-wider mb-2 block">Daily Budget (KES)</label>
+                          <div className="relative">
+                            <input 
+                              type="number" 
+                              value={preferences.budget} 
+                              onChange={(e) => handlePreferenceChange('budget', e.target.value)} 
+                              className="w-full pl-4 pr-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-xl focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 outline-none text-white transition-all font-mono"
+                            />
+                            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity"></div>
+                          </div>
                        </div>
+                       
                        <div>
-                          <label className="text-xs font-bold text-slate-500 uppercase">Meals / Day</label>
-                          <select value={preferences.mealsPerDay} onChange={(e) => handlePreferenceChange('mealsPerDay', e.target.value)} className="w-full mt-1 px-4 py-2 bg-slate-50 border rounded-lg outline-none">
-                            {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
-                          </select>
+                          <label className="text-xs font-bold text-emerald-500/80 uppercase tracking-wider mb-2 block">Meals / Day</label>
+                          <div className="relative">
+                            <select 
+                              value={preferences.mealsPerDay} 
+                              onChange={(e) => handlePreferenceChange('mealsPerDay', e.target.value)} 
+                              className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white outline-none focus:border-emerald-500/50 appearance-none cursor-pointer hover:bg-slate-800/50 transition-colors"
+                            >
+                              {[1,2,3,4,5].map(n => <option key={n} value={n} className="bg-slate-900">{n} Meals</option>)}
+                            </select>
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                              <span className="text-xs">▼</span>
+                            </div>
+                          </div>
                        </div>
+                       
                        <div className="sm:col-span-2">
-                          <label className="text-xs font-bold text-slate-500 uppercase">Diet Type</label>
-                          <select value={preferences.dietType} onChange={(e) => handlePreferenceChange('dietType', e.target.value)} className="w-full mt-1 px-4 py-2 bg-slate-50 border rounded-lg outline-none">
-                            {DIET_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                          </select>
+                          <label className="text-xs font-bold text-emerald-500/80 uppercase tracking-wider mb-2 block">Diet Style</label>
+                          <div className="relative">
+                            <select 
+                              value={preferences.dietType} 
+                              onChange={(e) => handlePreferenceChange('dietType', e.target.value)} 
+                              className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white outline-none focus:border-emerald-500/50 appearance-none cursor-pointer hover:bg-slate-800/50 transition-colors"
+                            >
+                              {DIET_TYPES.map(t => <option key={t.value} value={t.value} className="bg-slate-900">{t.label}</option>)}
+                            </select>
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                              <span className="text-xs">▼</span>
+                            </div>
+                          </div>
                        </div>
                     </div>
                     
-                    <div className="space-y-2">
-                       <label className="text-xs font-bold text-slate-500 uppercase">Meal Type</label>
+                    <div className="space-y-3 mb-8">
+                       <label className="text-xs font-bold text-emerald-500/80 uppercase tracking-wider block">Meal Type</label>
                        <div className="flex flex-wrap gap-2">
                           {Object.values(MealType).map((type) => (
                             <button
                               key={type}
                               onClick={() => setSelectedMealType(type)}
-                              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${selectedMealType === type ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}
+                              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 border ${
+                                selectedMealType === type 
+                                ? 'bg-emerald-500 text-white border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.4)]' 
+                                : 'bg-slate-800/30 text-slate-400 border-transparent hover:bg-slate-800 hover:border-slate-700 hover:text-white'
+                              }`}
                             >
                               {type === MealType.AUTO ? 'Auto' : type}
                             </button>
@@ -287,8 +342,15 @@ const App: React.FC = () => {
                        </div>
                     </div>
 
-                    <button onClick={handleSuggestMeal} className="w-full mt-6 bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-200">
-                       <Coffee size={20} /> Suggest Meal
+                    <button 
+                      onClick={handleSuggestMeal} 
+                      className="group relative w-full bg-emerald-500 text-white font-bold py-4 rounded-xl overflow-hidden transition-all hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:-translate-y-0.5 active:translate-y-0"
+                    >
+                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out"></div>
+                       <div className="flex items-center justify-center gap-2 relative z-10">
+                         <Sparkles size={20} className="animate-pulse" /> 
+                         <span>Generate Smart Meal</span>
+                       </div>
                     </button>
                   </section>
                 </div>
@@ -296,22 +358,35 @@ const App: React.FC = () => {
             )}
 
             {currentView === 'week' && (
-              <div className="space-y-6">
+              <div className="space-y-6 animate-slide-up">
                 {!weeklyPlan && (
-                  <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-2xl text-center">
-                    <Calendar size={48} className="mx-auto text-indigo-400 mb-4" />
-                    <h3 className="text-lg font-bold text-indigo-900">Plan your week</h3>
-                    <p className="text-indigo-700 mb-6 text-sm">Generate a 7-day meal plan based on your weekly budget of KES {preferences.weeklyBudget}.</p>
-                    <div className="max-w-xs mx-auto mb-4">
-                      <label className="block text-xs font-bold text-indigo-400 uppercase text-left mb-1">Weekly Budget (KES)</label>
-                      <input type="number" value={preferences.weeklyBudget} onChange={(e) => handlePreferenceChange('weeklyBudget', e.target.value)} className="w-full px-4 py-2 rounded-lg border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  <div className="glass-panel border-dashed border-2 border-indigo-500/30 p-8 rounded-3xl text-center">
+                    <div className="inline-flex p-4 rounded-full bg-indigo-500/10 mb-4 animate-float">
+                      <Calendar size={48} className="text-indigo-400" />
                     </div>
-                    <button onClick={handleWeeklyPlan} className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-colors">Generate Plan</button>
+                    <h3 className="text-2xl font-bold text-white mb-2">Weekly Planner</h3>
+                    <p className="text-slate-400 mb-8 max-w-md mx-auto">Generate a complete 7-day budget meal plan using AI market intelligence.</p>
+                    
+                    <div className="max-w-xs mx-auto mb-6">
+                      <label className="block text-xs font-bold text-indigo-400 uppercase text-left mb-2 pl-1">Weekly Budget (KES)</label>
+                      <input 
+                        type="number" 
+                        value={preferences.weeklyBudget} 
+                        onChange={(e) => handlePreferenceChange('weeklyBudget', e.target.value)} 
+                        className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-indigo-500/30 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-mono text-center text-lg" 
+                      />
+                    </div>
+                    <button 
+                      onClick={handleWeeklyPlan} 
+                      className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-500 transition-all hover:shadow-[0_0_20px_rgba(99,102,241,0.4)]"
+                    >
+                      Generate Week Plan
+                    </button>
                   </div>
                 )}
                 {weeklyPlan && <WeeklyPlanView data={weeklyPlan} />}
                 {weeklyPlan && (
-                  <button onClick={handleWeeklyPlan} className="w-full py-3 text-indigo-600 font-medium hover:bg-indigo-50 rounded-xl transition-colors">
+                  <button onClick={handleWeeklyPlan} className="w-full py-4 text-indigo-400 font-medium hover:text-indigo-300 hover:bg-indigo-500/10 rounded-xl transition-all border border-transparent hover:border-indigo-500/20">
                     Regenerate Plan
                   </button>
                 )}
@@ -319,14 +394,20 @@ const App: React.FC = () => {
             )}
 
             {currentView === 'shop' && (
-              <div className="space-y-6">
+              <div className="space-y-6 animate-slide-up">
                  {!shoppingList && (
-                   <div className="bg-orange-50 border border-orange-100 p-6 rounded-2xl text-center">
-                     <ShoppingCart size={48} className="mx-auto text-orange-400 mb-4" />
-                     <h3 className="text-lg font-bold text-orange-900">Shopping List</h3>
-                     <p className="text-orange-700 mb-6 text-sm">Create a smart shopping list based on your weekly plan and current inventory.</p>
-                     <button onClick={handleShoppingList} disabled={!weeklyPlan} className="bg-orange-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                       {weeklyPlan ? "Create List" : "Generate Weekly Plan First"}
+                   <div className="glass-panel border-dashed border-2 border-orange-500/30 p-8 rounded-3xl text-center">
+                     <div className="inline-flex p-4 rounded-full bg-orange-500/10 mb-4 animate-float">
+                       <ShoppingCart size={48} className="text-orange-400" />
+                     </div>
+                     <h3 className="text-2xl font-bold text-white mb-2">Smart Shopping List</h3>
+                     <p className="text-slate-400 mb-8">Auto-generate what you need to buy based on your plan and what you already have.</p>
+                     <button 
+                       onClick={handleShoppingList} 
+                       disabled={!weeklyPlan} 
+                       className="bg-orange-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-[0_0_20px_rgba(249,115,22,0.4)]"
+                     >
+                       {weeklyPlan ? "Create List" : "Generate Plan First"}
                      </button>
                    </div>
                  )}
@@ -335,11 +416,14 @@ const App: React.FC = () => {
             )}
 
             {currentView === 'pantry' && (
-              <div className="space-y-6">
+              <div className="space-y-6 animate-slide-up">
                 <FoodManager items={inventory} setItems={setInventory} />
                 <div className="flex justify-end">
-                   <button onClick={handleAnalyzeInventory} className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center gap-2">
-                     <Settings size={16} /> Analyze Inventory
+                   <button 
+                     onClick={handleAnalyzeInventory} 
+                     className="bg-purple-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-purple-500 transition-all hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] flex items-center gap-2"
+                   >
+                     <Sparkles size={18} /> AI Inventory Analysis
                    </button>
                 </div>
                 {inventoryAnalysis && <InventoryAnalysisView data={inventoryAnalysis} />}
@@ -347,13 +431,18 @@ const App: React.FC = () => {
             )}
             
             {currentView === 'analytics' && (
-              <div className="space-y-6">
+              <div className="space-y-6 animate-slide-up">
                  {!analyticsData && (
-                    <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-2xl text-center">
-                       <BarChart3 size={48} className="mx-auto text-emerald-400 mb-4" />
-                       <h3 className="text-lg font-bold text-emerald-900">Your Insights</h3>
-                       <p className="text-emerald-700 mb-6 text-sm">Analyze your spending habits and get market price alerts.</p>
-                       <button onClick={handleAnalytics} className="bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-emerald-700 transition-colors">
+                    <div className="glass-panel border-dashed border-2 border-blue-500/30 p-8 rounded-3xl text-center">
+                       <div className="inline-flex p-4 rounded-full bg-blue-500/10 mb-4 animate-float">
+                         <BarChart3 size={48} className="text-blue-400" />
+                       </div>
+                       <h3 className="text-2xl font-bold text-white mb-2">Financial Insights</h3>
+                       <p className="text-slate-400 mb-8">Visualize your spending trends and get market price alerts.</p>
+                       <button 
+                         onClick={handleAnalytics} 
+                         className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-500 transition-all hover:shadow-[0_0_20px_rgba(59,130,246,0.4)]"
+                       >
                          Load Analytics
                        </button>
                     </div>
@@ -365,52 +454,81 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 pb-safe z-30 shadow-[0_-5px_10px_rgba(0,0,0,0.02)]">
-        <div className="max-w-3xl mx-auto flex justify-around p-2">
-          <button 
-            onClick={() => setCurrentView('meal')}
-            className={`flex flex-col items-center gap-1 p-2 rounded-xl w-full transition-colors ${currentView === 'meal' ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 hover:bg-slate-50'}`}
-          >
-            <Home size={20} />
-            <span className="text-[10px] font-bold uppercase">Today</span>
-          </button>
-          
-          <button 
-            onClick={() => setCurrentView('week')}
-            className={`flex flex-col items-center gap-1 p-2 rounded-xl w-full transition-colors ${currentView === 'week' ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400 hover:bg-slate-50'}`}
-          >
-            <Calendar size={20} />
-            <span className="text-[10px] font-bold uppercase">Week</span>
-          </button>
+      {/* Futuristic Bottom Navigation */}
+      <nav className="fixed bottom-6 left-4 right-4 z-50">
+        <div className="max-w-xl mx-auto glass-panel rounded-2xl p-2 flex justify-between items-center shadow-2xl shadow-black/50 border border-white/10 relative overflow-hidden">
+           {/* Glow behind nav */}
+           <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-indigo-500/5 to-purple-500/5 blur-xl pointer-events-none"></div>
 
-          <button 
-            onClick={() => setCurrentView('shop')}
-            className={`flex flex-col items-center gap-1 p-2 rounded-xl w-full transition-colors ${currentView === 'shop' ? 'text-orange-600 bg-orange-50' : 'text-slate-400 hover:bg-slate-50'}`}
-          >
-            <ShoppingCart size={20} />
-            <span className="text-[10px] font-bold uppercase">Shop</span>
-          </button>
-
-          <button 
-            onClick={() => setCurrentView('pantry')}
-            className={`flex flex-col items-center gap-1 p-2 rounded-xl w-full transition-colors ${currentView === 'pantry' ? 'text-purple-600 bg-purple-50' : 'text-slate-400 hover:bg-slate-50'}`}
-          >
-            <Archive size={20} />
-            <span className="text-[10px] font-bold uppercase">Soko</span>
-          </button>
-          
-          <button 
-            onClick={() => setCurrentView('analytics')}
-            className={`flex flex-col items-center gap-1 p-2 rounded-xl w-full transition-colors ${currentView === 'analytics' ? 'text-blue-600 bg-blue-50' : 'text-slate-400 hover:bg-slate-50'}`}
-          >
-            <BarChart3 size={20} />
-            <span className="text-[10px] font-bold uppercase">Trends</span>
-          </button>
+          <NavButton 
+            active={currentView === 'meal'} 
+            onClick={() => setCurrentView('meal')} 
+            icon={<Home size={22} />} 
+            label="Today" 
+            color="emerald"
+          />
+          <NavButton 
+            active={currentView === 'week'} 
+            onClick={() => setCurrentView('week')} 
+            icon={<Calendar size={22} />} 
+            label="Week" 
+            color="indigo"
+          />
+          <NavButton 
+            active={currentView === 'shop'} 
+            onClick={() => setCurrentView('shop')} 
+            icon={<ShoppingCart size={22} />} 
+            label="Shop" 
+            color="orange"
+          />
+          <NavButton 
+            active={currentView === 'pantry'} 
+            onClick={() => setCurrentView('pantry')} 
+            icon={<Archive size={22} />} 
+            label="Soko" 
+            color="purple"
+          />
+          <NavButton 
+            active={currentView === 'analytics'} 
+            onClick={() => setCurrentView('analytics')} 
+            icon={<BarChart3 size={22} />} 
+            label="Stats" 
+            color="blue"
+          />
         </div>
       </nav>
     </div>
   );
 };
+
+// Helper Component for Nav Items
+const NavButton: React.FC<{active: boolean, onClick: () => void, icon: React.ReactNode, label: string, color: string}> = ({ active, onClick, icon, label, color }) => {
+  const activeClasses = {
+    emerald: 'text-emerald-400 bg-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.3)]',
+    indigo: 'text-indigo-400 bg-indigo-500/10 shadow-[0_0_15px_rgba(99,102,241,0.3)]',
+    orange: 'text-orange-400 bg-orange-500/10 shadow-[0_0_15px_rgba(249,115,22,0.3)]',
+    purple: 'text-purple-400 bg-purple-500/10 shadow-[0_0_15px_rgba(168,85,247,0.3)]',
+    blue: 'text-blue-400 bg-blue-500/10 shadow-[0_0_15px_rgba(59,130,246,0.3)]',
+  };
+
+  return (
+    <button 
+      onClick={onClick}
+      className={`flex flex-col items-center gap-1 p-3 rounded-xl w-full transition-all duration-300 relative overflow-hidden ${
+        active 
+          ? activeClasses[color as keyof typeof activeClasses]
+          : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+      }`}
+    >
+      <div className={`transition-transform duration-300 ${active ? 'scale-110' : ''}`}>
+        {icon}
+      </div>
+      <span className={`text-[10px] font-bold uppercase tracking-wider ${active ? 'opacity-100' : 'opacity-0 scale-0 hidden sm:block'} transition-all`}>
+        {label}
+      </span>
+      {active && <div className={`absolute bottom-0 w-8 h-1 rounded-t-full bg-${color}-500 blur-[2px]`}></div>}
+    </button>
+  )
+}
 
 export default App;

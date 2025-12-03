@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { ChefHat, ShoppingCart, BarChart3, Calendar, ChevronRight, Check, X } from 'lucide-react';
+import { ChefHat, ShoppingCart, BarChart3, Calendar, ChevronRight, Check } from 'lucide-react';
 
 interface OnboardingProps {
   onComplete: () => void;
@@ -9,27 +8,27 @@ interface OnboardingProps {
 const STEPS = [
   {
     title: "Welcome to MealMind",
-    description: "Your smart assistant for planning affordable, delicious meals in Kenya.",
-    icon: <ChefHat size={48} className="text-emerald-500" />,
-    color: "bg-emerald-100"
+    description: "Your futuristic AI assistant for planning affordable, delicious meals in Kenya.",
+    icon: <ChefHat size={48} className="text-emerald-400 drop-shadow-[0_0_10px_rgba(52,211,153,0.5)]" />,
+    color: "bg-emerald-500/10 border-emerald-500/20"
   },
   {
     title: "Manage Your Soko",
-    description: "First, go to the 'Soko' tab. Add foods you already have in your kitchen. We prioritize these to save you money.",
-    icon: <ShoppingCart size={48} className="text-purple-500" />,
-    color: "bg-purple-100"
+    description: "First, go to the 'Soko' tab. Add foods you already have. We optimize costs based on your inventory.",
+    icon: <ShoppingCart size={48} className="text-purple-400 drop-shadow-[0_0_10px_rgba(192,132,252,0.5)]" />,
+    color: "bg-purple-500/10 border-purple-500/20"
   },
   {
     title: "Plan & Budget",
-    description: "Set your daily budget (KES). We'll suggest meals that fit your wallet and your preferences.",
-    icon: <Calendar size={48} className="text-indigo-500" />,
-    color: "bg-indigo-100"
+    description: "Set your daily KES budget. Our AI scans market prices to find meals that fit your wallet.",
+    icon: <Calendar size={48} className="text-indigo-400 drop-shadow-[0_0_10px_rgba(129,140,248,0.5)]" />,
+    color: "bg-indigo-500/10 border-indigo-500/20"
   },
   {
     title: "Track Insights",
-    description: "View the 'Trends' tab to see your spending habits and get market price alerts for Nairobi.",
-    icon: <BarChart3 size={48} className="text-blue-500" />,
-    color: "bg-blue-100"
+    description: "Check the 'Stats' tab to visualize spending trends and get real-time price alerts for Nairobi.",
+    icon: <BarChart3 size={48} className="text-blue-400 drop-shadow-[0_0_10px_rgba(96,165,250,0.5)]" />,
+    color: "bg-blue-500/10 border-blue-500/20"
   }
 ];
 
@@ -51,28 +50,32 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   const step = STEPS[currentStep];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-sm bg-white/90 backdrop-blur-md border border-white/20 rounded-3xl shadow-2xl overflow-hidden relative">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-[#020617]/90 backdrop-blur-md animate-fade-in">
+      <div className="w-full max-w-sm glass-panel rounded-3xl shadow-2xl overflow-hidden relative border border-white/10">
         
+        {/* Glow Effects */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 blur-[50px] rounded-full"></div>
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/20 blur-[50px] rounded-full"></div>
+
         {/* Skip Button */}
         <button 
           onClick={handleSkip}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
+          className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors z-20"
         >
-          <span className="text-xs font-bold uppercase tracking-wider">Skip</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider">Skip</span>
         </button>
 
         {/* Content Area */}
-        <div className="p-8 flex flex-col items-center text-center mt-4">
-          <div className={`p-6 rounded-full ${step.color} mb-6 shadow-lg transform transition-all duration-300 ease-in-out hover:scale-105`}>
+        <div className="p-8 flex flex-col items-center text-center mt-4 relative z-10">
+          <div className={`p-6 rounded-full ${step.color} border mb-6 shadow-lg transform transition-all duration-300 ease-in-out hover:scale-105 animate-float`}>
             {step.icon}
           </div>
           
-          <h2 className="text-2xl font-bold text-slate-800 mb-3 transition-all duration-300">
+          <h2 className="text-2xl font-bold text-white mb-3 transition-all duration-300">
             {step.title}
           </h2>
           
-          <p className="text-slate-500 text-sm leading-relaxed mb-8 h-16">
+          <p className="text-slate-400 text-sm leading-relaxed mb-8 h-16">
             {step.description}
           </p>
 
@@ -81,8 +84,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
             {STEPS.map((_, idx) => (
               <div 
                 key={idx}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  idx === currentStep ? 'w-6 bg-emerald-500' : 'w-1.5 bg-slate-200'
+                className={`h-1.5 rounded-full transition-all duration-500 ${
+                  idx === currentStep ? 'w-8 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'w-1.5 bg-slate-700'
                 }`}
               />
             ))}
@@ -91,7 +94,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
           {/* Action Button */}
           <button
             onClick={handleNext}
-            className="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl active:scale-95"
+            className="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl hover:bg-emerald-500 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.4)] active:scale-95 border border-emerald-400/20"
           >
             {currentStep === STEPS.length - 1 ? (
               <>Get Started <Check size={20} /></>
@@ -100,10 +103,6 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
             )}
           </button>
         </div>
-
-        {/* Decorative background blur element */}
-        <div className="absolute -top-20 -left-20 w-40 h-40 bg-emerald-400 rounded-full mix-blend-multiply filter blur-3xl opacity-10 pointer-events-none"></div>
-        <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-10 pointer-events-none"></div>
       </div>
     </div>
   );
