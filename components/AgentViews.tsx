@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { WeeklyPlanResponse, ShoppingListResponse, InventoryAnalysisResponse } from '../types';
 import { Calendar, ShoppingCart, Lightbulb, CheckCircle2, TrendingUp, AlertCircle } from 'lucide-react';

@@ -1,3 +1,4 @@
+
 import { FoodItem, DietType } from './types';
 
 export const INITIAL_FOODS: FoodItem[] = [
