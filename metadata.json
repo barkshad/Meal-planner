@@ -1,0 +1,5 @@
+{
+  "name": "MealMind",
+  "description": "A smart meal planning assistant helping you decide what to eat based on your budget and available ingredients.",
+  "requestFramePermissions": []
+}
