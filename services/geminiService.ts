@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { 
   FoodItem, 
@@ -10,7 +9,8 @@ import {
   DailyPlan
 } from "../types";
 
-const apiKey = process.env.API_KEY;
+// Using the provided API key directly to avoid process.env runtime errors in the browser
+const apiKey = "AIzaSyAVTl2ip-3Ed4vcjdDcAZm-Pty8YixmtG0";
 
 // --- Schemas ---
 
