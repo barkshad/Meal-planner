@@ -35,6 +35,12 @@ export const generateFallbackMeal = (
     if (typeCandidates.length > 0) candidates = typeCandidates;
   }
 
+  // Filter by diet if necessary (simple match)
+  if (prefs.dietType !== 'regular') {
+     const dietCandidates = candidates.filter(m => m.diet.includes(prefs.dietType));
+     if (dietCandidates.length > 0) candidates = dietCandidates;
+  }
+
   // Use inventory to boost score (simple logic)
   // In a real app, this would be more complex weighting
   const inventoryNames = inventory.map(i => i.name.toLowerCase());
@@ -61,7 +67,7 @@ export const generateFallbackMeal = (
     }],
     total_meal_cost: selectedMeal.cost,
     within_budget: selectedMeal.cost <= prefs.budget,
-    message: "AI connection limited. Showing top local recommendation."
+    message: "Network Optimization: Showing top local recommendation based on your budget."
   };
 };
 
@@ -70,6 +76,9 @@ export const generateFallbackWeeklyPlan = (prefs: UserPreferences): WeeklyPlanRe
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
   const weeklyPlan = [];
   let totalCost = 0;
+
+  // Calculate daily budget allowance
+  const dailyBudget = prefs.weeklyBudget / 7;
 
   for (const day of days) {
     const meals = [];
@@ -81,13 +90,23 @@ export const generateFallbackWeeklyPlan = (prefs: UserPreferences): WeeklyPlanRe
     dayCost += bfast.cost;
 
     // Lunch
-    const lunch = getRandomItem(KENYAN_MEAL_DATABASE.filter(m => m.type === MealType.LUNCH || m.type === MealType.DINNER));
+    // Try to pick something that fits remaining daily budget
+    const lunchCandidates = KENYAN_MEAL_DATABASE.filter(m => 
+      (m.type === MealType.LUNCH || m.type === MealType.DINNER) && 
+      m.cost <= (dailyBudget - dayCost)
+    );
+    const lunch = lunchCandidates.length > 0 ? getRandomItem(lunchCandidates) : getRandomItem(KENYAN_MEAL_DATABASE.filter(m => m.type === MealType.LUNCH));
+    
     meals.push({ meal_type: "Lunch", name: lunch.name, cost: lunch.cost });
     dayCost += lunch.cost;
 
     // Dinner (if meals per day > 2)
     if (prefs.mealsPerDay > 2) {
-      const dinner = getRandomItem(KENYAN_MEAL_DATABASE.filter(m => m.type === MealType.DINNER));
+      const dinnerCandidates = KENYAN_MEAL_DATABASE.filter(m => 
+        m.type === MealType.DINNER && 
+        m.cost <= (dailyBudget - dayCost)
+      );
+      const dinner = dinnerCandidates.length > 0 ? getRandomItem(dinnerCandidates) : getRandomItem(KENYAN_MEAL_DATABASE.filter(m => m.type === MealType.DINNER));
       meals.push({ meal_type: "Dinner", name: dinner.name, cost: dinner.cost });
       dayCost += dinner.cost;
     }
@@ -118,7 +137,7 @@ export const generateFallbackShoppingList = (inventory: FoodItem[]): ShoppingLis
 
   return {
     shopping_list: needed.length > 0 ? needed : SHOPPING_DEFAULTS.slice(0, 3),
-    estimated_total_cost: needed.length * 150 // Rough estimate
+    estimated_total_cost: needed.length > 0 ? needed.length * 150 : 450 // Rough estimate
   };
 };
 
@@ -136,7 +155,7 @@ export const generateFallbackAnalytics = (prefs: UserPreferences): AnalyticsData
 export const generateFallbackInventoryAnalysis = (): InventoryAnalysisResponse => {
   return {
     cheap_meal_options: ["Ugali Skuma", "Rice & Beans", "Githeri"],
-    ways_to_extend_inventory: ["Add water to stews", "Use leftovers for breakfast", "Buy in bulk"],
-    recommended_additions: ["Avocado", "Bananas", "Curry Powder"]
+    ways_to_extend_inventory: ["Add water to stews to increase volume", "Use leftovers for breakfast", "Buy staples in bulk to save"],
+    recommended_additions: ["Avocado", "Bananas", "Curry Powder (Royco)"]
   };
 };

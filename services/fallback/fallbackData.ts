@@ -34,6 +34,13 @@ export const KENYAN_MEAL_DATABASE = [
     ingredients: ["Bread", "Margarine", "Cocoa"],
     diet: ["regular"]
   },
+  {
+    name: "Oats & Milk with Banana",
+    type: MealType.BREAKFAST,
+    cost: 130,
+    ingredients: ["Oats", "Milk", "Banana"],
+    diet: ["healthy", "energy", "vegetarian", "light"]
+  },
 
   // --- LUNCH / DINNER ---
   {
@@ -77,6 +84,34 @@ export const KENYAN_MEAL_DATABASE = [
     cost: 250,
     ingredients: ["Beef", "Rice", "Onion", "Tomato", "Coriander"],
     diet: ["regular", "energy"]
+  },
+  {
+    name: "Pilau & Kachumbari",
+    type: MealType.DINNER,
+    cost: 300,
+    ingredients: ["Rice", "Beef", "Pilau Masala", "Onion", "Tomato"],
+    diet: ["regular", "energy"]
+  },
+  {
+    name: "Matoke (Plantains) Stew",
+    type: MealType.LUNCH,
+    cost: 180,
+    ingredients: ["Matoke", "Potatoes", "Beef", "Tomatoes"],
+    diet: ["healthy", "energy", "regular"]
+  },
+  {
+    name: "Spaghetti & Minced Meat",
+    type: MealType.DINNER,
+    cost: 220,
+    ingredients: ["Spaghetti", "Minced Meat", "Tomato Paste"],
+    diet: ["regular", "energy"]
+  },
+  {
+    name: "Vegetable Rice & Avocado",
+    type: MealType.LUNCH,
+    cost: 110,
+    ingredients: ["Rice", "Mixed Vegetables", "Avocado"],
+    diet: ["vegetarian", "light", "healthy"]
   }
 ];
 
@@ -85,7 +120,10 @@ export const SHOPPING_DEFAULTS = [
   { item: "Cooking Oil", quantity: "1 Liter", reason: "General cooking" },
   { item: "Onions", quantity: "5 pcs", reason: "Flavor base" },
   { item: "Tomatoes", quantity: "5 pcs", reason: "Stew base" },
-  { item: "Salt", quantity: "1 pkt", reason: "Seasoning" }
+  { item: "Salt", quantity: "1 pkt", reason: "Seasoning" },
+  { item: "Sugar", quantity: "1kg", reason: "Breakfast tea/porridge" },
+  { item: "Milk", quantity: "2 packets", reason: "Breakfast" },
+  { item: "Rice", quantity: "1kg", reason: "Dinner alternative" }
 ];
 
 export const ANALYTICS_DEFAULTS = {
@@ -107,6 +145,7 @@ export const ANALYTICS_DEFAULTS = {
   alerts: [
     "Tomato prices have dropped by 10% in Nairobi markets.",
     "Onion prices are high due to rain seasons.",
-    "Sugar prices remain stable."
+    "Sugar prices remain stable.",
+    "Potato prices expected to rise next week."
   ]
 };

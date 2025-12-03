@@ -127,6 +127,13 @@ const analyticsSchema = {
 
 type Action = 'suggest_meal' | 'weekly_plan' | 'shopping_list' | 'analyze_inventory' | 'get_analytics';
 
+// Layer 2: Placeholder for Backup AI Model
+async function callBackupAI(action: Action, payload: any): Promise<any> {
+    // In a production environment, this would call OpenRouter, Groq, or another API.
+    // For now, we simulate a failure here to drop through to the robust local fallback.
+    throw new Error("Backup AI service not configured");
+}
+
 export const runAIAction = async (
   action: Action,
   payload: {
@@ -147,7 +154,7 @@ export const runAIAction = async (
     let prompt = "";
     let schema: any;
 
-    // Prompt construction (Same as original)
+    // Prompt construction
     switch (action) {
       case 'suggest_meal':
         prompt = `
@@ -215,14 +222,21 @@ export const runAIAction = async (
     return JSON.parse(cleanText);
 
   } catch (error) {
-    // LAYER 2, 3, 4: FALLBACK SYSTEM
+    console.warn(`[MealMind Reliability] Layer 1 (Gemini) Failed for action: ${action}. Reason:`, error);
+
+    // LAYER 2: ATTEMPT BACKUP AI (Placeholder)
+    try {
+        return await callBackupAI(action, payload);
+    } catch (backupError) {
+        console.warn(`[MealMind Reliability] Layer 2 (Backup AI) Failed. Switching to Local Fallback Engine.`);
+    }
+
+    // LAYER 3 & 4: LOCAL FALLBACK ENGINE
     // We catch ANY error (API limit, Network, Parsing) and return local rule-based results.
     // This ensures the user NEVER sees an error screen.
     
-    console.warn(`[MealMind Reliability] AI Failed for action: ${action}. Switching to Fallback Engine.`, error);
-
     // Simulate network delay for realism (optional)
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, 600));
 
     switch (action) {
       case 'suggest_meal':
