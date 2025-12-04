@@ -1,4 +1,3 @@
-
 import React, { useRef, useState } from 'react';
 import { Recipe } from '../types';
 import { ChefHat, Clock, DollarSign, ListOrdered, Utensils, FileDown, Share2, Loader2, ImageIcon } from 'lucide-react';
@@ -19,13 +18,18 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState<'pdf' | 'image' | null>(null);
 
+  if (!recipe) return null;
+
   const generateFileName = (ext: string) => {
-    const cleanName = recipe.title.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    const cleanName = (recipe.title || 'recipe').toLowerCase().replace(/[^a-z0-9]/g, '-');
     return `${cleanName}_mealplanner-ke.${ext}`;
   };
 
   const handleDownloadPDF = async () => {
-    if (!cardRef.current || !window.html2canvas || !window.jspdf) return;
+    if (!cardRef.current || !window.html2canvas || !window.jspdf) {
+        alert("PDF libraries loading. Check internet connection.");
+        return;
+    }
     setIsGenerating('pdf');
 
     try {
@@ -66,7 +70,6 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
         position = heightLeft - imgHeight; // Move position up
         pdf.addPage();
         pdf.addImage(imgData, 'PNG', 0, position - (heightLeft - pageHeight), imgWidth, imgHeight, '', 'FAST'); 
-        // Simplified logic: usually you just subtract pageHeight from y-offset
         heightLeft -= pageHeight;
       }
       
@@ -80,7 +83,10 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
   };
 
   const handleShareImage = async () => {
-    if (!cardRef.current || !window.html2canvas) return;
+    if (!cardRef.current || !window.html2canvas) {
+        alert("Image libraries loading. Check internet connection.");
+        return;
+    }
     setIsGenerating('image');
 
     try {
@@ -184,7 +190,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
               <ListOrdered size={18} className="text-blue-500" /> Ingredients
             </h3>
             <ul className="space-y-2">
-                {recipe.ingredients.map((ing, i) => (
+                {recipe.ingredients?.map((ing, i) => (
                     <li key={i} className="flex items-center gap-3 text-sm text-slate-600 p-2 bg-slate-50 rounded-lg border border-slate-100">
                         <div className="w-1.5 h-1.5 bg-blue-400 rounded-full flex-shrink-0"></div>
                         <span className="flex-1">{ing}</span>
@@ -199,7 +205,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
               <Utensils size={18} className="text-blue-500" /> Steps
             </h3>
             <div className="space-y-4">
-                {recipe.steps.sort((a,b) => a.step - b.step).map((step) => (
+                {recipe.steps?.sort((a,b) => a.step - b.step).map((step) => (
                     <div key={step.step} className="flex items-start gap-4">
                         <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-blue-50 text-blue-600 rounded-full font-bold border border-blue-100 mt-1">
                             {step.step}
