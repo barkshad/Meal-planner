@@ -1,20 +1,20 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { 
   FoodItem, 
   UserPreferences,
+  MealType
 } from "../types";
 import { 
   generateFallbackMeal, 
   generateFallbackWeeklyPlan, 
   generateFallbackShoppingList, 
   generateFallbackAnalytics,
-  generateFallbackInventoryAnalysis
+  generateFallbackInventoryAnalysis,
+  generateFallbackRecipe
 } from "./fallback/fallbackEngine";
 
-const apiKey = "AIzaSyAVTl2ip-3Ed4vcjdDcAZm-Pty8YixmtG0";
+// --- Schemas ---
 
-// --- Schemas (Kept for Type consistency in AI calls) ---
 const mealResponseSchema = {
   type: Type.OBJECT,
   properties: {
@@ -26,16 +26,15 @@ const mealResponseSchema = {
         properties: {
           food: { type: Type.STRING },
           estimated_cost: { type: Type.NUMBER },
-          reason: { type: Type.STRING },
-        },
-        required: ["food", "estimated_cost", "reason"],
-      },
+          reason: { type: Type.STRING }
+        }
+      }
     },
     total_meal_cost: { type: Type.NUMBER },
     within_budget: { type: Type.BOOLEAN },
-    message: { type: Type.STRING },
+    message: { type: Type.STRING }
   },
-  required: ["meal_type", "suggestions", "total_meal_cost", "within_budget"],
+  required: ["meal_type", "suggestions", "total_meal_cost", "within_budget", "message"]
 };
 
 const weeklyPlanSchema = {
@@ -54,20 +53,17 @@ const weeklyPlanSchema = {
               properties: {
                 meal_type: { type: Type.STRING },
                 name: { type: Type.STRING },
-                cost: { type: Type.NUMBER },
-              },
-              required: ["meal_type", "name", "cost"],
+                cost: { type: Type.NUMBER }
+              }
             }
           },
           day_total: { type: Type.NUMBER }
-        },
-        required: ["day", "meals"],
+        }
       }
     },
     total_cost: { type: Type.NUMBER },
     within_budget: { type: Type.BOOLEAN }
-  },
-  required: ["weekly_plan", "total_cost", "within_budget"],
+  }
 };
 
 const shoppingListSchema = {
@@ -81,13 +77,11 @@ const shoppingListSchema = {
           item: { type: Type.STRING },
           quantity: { type: Type.STRING },
           reason: { type: Type.STRING }
-        },
-        required: ["item", "quantity", "reason"],
+        }
       }
     },
     estimated_total_cost: { type: Type.NUMBER }
-  },
-  required: ["shopping_list", "estimated_total_cost"],
+  }
 };
 
 const analysisSchema = {
@@ -96,8 +90,7 @@ const analysisSchema = {
     cheap_meal_options: { type: Type.ARRAY, items: { type: Type.STRING } },
     ways_to_extend_inventory: { type: Type.ARRAY, items: { type: Type.STRING } },
     recommended_additions: { type: Type.ARRAY, items: { type: Type.STRING } }
-  },
-  required: ["cheap_meal_options", "ways_to_extend_inventory", "recommended_additions"],
+  }
 };
 
 const analyticsSchema = {
@@ -107,30 +100,57 @@ const analyticsSchema = {
       type: Type.ARRAY,
       items: {
         type: Type.OBJECT,
-        properties: { day: { type: Type.STRING }, amount: { type: Type.NUMBER } }
+        properties: {
+          day: { type: Type.STRING },
+          amount: { type: Type.NUMBER }
+        }
       }
     },
     category_breakdown: {
       type: Type.ARRAY,
       items: {
         type: Type.OBJECT,
-        properties: { category: { type: Type.STRING }, percentage: { type: Type.NUMBER } }
+        properties: {
+          category: { type: Type.STRING },
+          percentage: { type: Type.NUMBER }
+        }
       }
     },
     projected_savings: { type: Type.NUMBER },
     price_alerts: { type: Type.ARRAY, items: { type: Type.STRING } }
-  },
-  required: ["weekly_spending_trend", "category_breakdown", "projected_savings", "price_alerts"]
+  }
 };
+
+const recipeResponseSchema = {
+  type: Type.OBJECT,
+  properties: {
+    id: { type: Type.STRING },
+    title: { type: Type.STRING },
+    ingredients: { type: Type.ARRAY, items: { type: Type.STRING } },
+    steps: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          step: { type: Type.NUMBER },
+          instruction: { type: Type.STRING },
+        },
+        required: ["step", "instruction"],
+      },
+    },
+    estimated_cost_ksh: { type: Type.NUMBER },
+    cook_time_minutes: { type: Type.NUMBER },
+    category: { type: Type.STRING },
+  },
+  required: ["id", "title", "ingredients", "steps", "estimated_cost_ksh", "cook_time_minutes", "category"],
+};
+
 
 // --- Orchestrator ---
 
-type Action = 'suggest_meal' | 'weekly_plan' | 'shopping_list' | 'analyze_inventory' | 'get_analytics';
+type Action = 'suggest_meal' | 'weekly_plan' | 'shopping_list' | 'analyze_inventory' | 'get_analytics' | 'generate_recipe';
 
-// Layer 2: Placeholder for Backup AI Model
 async function callBackupAI(action: Action, payload: any): Promise<any> {
-    // In a production environment, this would call OpenRouter, Groq, or another API.
-    // For now, we simulate a failure here to drop through to the robust local fallback.
     throw new Error("Backup AI service not configured");
 }
 
@@ -143,13 +163,10 @@ export const runAIAction = async (
   }
 ): Promise<any> => {
   
-  // LAYER 1: ATTEMPT GEMINI AI
   try {
-    if (!apiKey) throw new Error("API Key is missing.");
-
-    const ai = new GoogleGenAI({ apiKey });
-    const modelId = "gemini-1.5-flash"; 
-    const inventoryStr = payload.inventory.map(i => `- ${i.name} (${i.cost} KES)`).join("\n");
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const modelId = "gemini-2.5-flash"; 
+    const inventoryStr = (payload.inventory || []).map(i => `- ${i.name} (${i.cost} KES)`).join("\n");
 
     let prompt = "";
     let schema: any;
@@ -159,12 +176,12 @@ export const runAIAction = async (
       case 'suggest_meal':
         prompt = `
           ACTION: suggest_meal
-          Budget: KES ${payload.preferences.budget}
+          User Budget: KES ${payload.preferences.budget}
           Diet: ${payload.preferences.dietType}
-          Time: ${payload.context.currentTime}
-          Type: ${payload.context.mealType}
-          Inventory: ${inventoryStr}
-          Task: Suggest ONE meal for a Kenyan user. Focus on affordability.
+          Current Inventory: 
+          ${inventoryStr}
+          
+          Task: Suggest ONE meal for ${payload.context?.mealType || 'any time'} that uses the inventory to save money.
         `;
         schema = mealResponseSchema;
         break;
@@ -173,37 +190,54 @@ export const runAIAction = async (
         prompt = `
           ACTION: weekly_plan
           Weekly Budget: KES ${payload.preferences.weeklyBudget}
-          Meals/Day: ${payload.preferences.mealsPerDay}
           Diet: ${payload.preferences.dietType}
-          Inventory: ${inventoryStr}
-          Task: Generate a 7-day meal plan (Mon-Sun).
+          Task: Create a 7-day meal plan (Breakfast, Lunch, Dinner).
         `;
         schema = weeklyPlanSchema;
         break;
 
       case 'shopping_list':
-        const plan = payload.context.weeklyPlan || [];
-        const planSummary = JSON.stringify(plan).substring(0, 1000); // Truncate to save tokens
         prompt = `
           ACTION: shopping_list
-          Plan Summary: ${planSummary}
-          Inventory: ${inventoryStr}
-          Task: Create a shopping list.
+          Current Inventory:
+          ${inventoryStr}
+          Task: What essentials are missing for a standard Kenyan week?
         `;
         schema = shoppingListSchema;
         break;
 
       case 'analyze_inventory':
-        prompt = `ACTION: analyze_inventory Inventory: ${inventoryStr}`;
+        prompt = `
+          ACTION: analyze_inventory
+          Inventory:
+          ${inventoryStr}
+          Task: Suggest cheap meals I can make NOW, how to extend these items, and what 3 cheap things I should add.
+        `;
         schema = analysisSchema;
         break;
         
       case 'get_analytics':
-        prompt = `ACTION: get_analytics Budget: KES ${payload.preferences.weeklyBudget}`;
+        prompt = `
+          ACTION: get_analytics
+          Budget: ${payload.preferences.budget}
+          Task: Generate simulated spending data and market alerts for Nairobi.
+        `;
         schema = analyticsSchema;
         break;
-    }
 
+      case 'generate_recipe':
+        prompt = `
+          ACTION: generate_recipe
+          User Budget: KES ${payload.context.budget}
+          Available Time: ${payload.context.time} minutes
+          User has these ingredients: ${payload.context.ingredients}
+          Task: Generate a simple, single Kenyan recipe that fits these constraints. Be creative but practical. The ID should be a unique string.
+        `;
+        schema = recipeResponseSchema;
+        break;
+    }
+    
+    // ... existing AI call logic ...
     const response = await ai.models.generateContent({
       model: modelId,
       contents: prompt,
@@ -221,36 +255,31 @@ export const runAIAction = async (
     const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
     return JSON.parse(cleanText);
 
+
   } catch (error) {
     console.warn(`[MealMind Reliability] Layer 1 (Gemini) Failed for action: ${action}. Reason:`, error);
 
-    // LAYER 2: ATTEMPT BACKUP AI (Placeholder)
     try {
         return await callBackupAI(action, payload);
     } catch (backupError) {
         console.warn(`[MealMind Reliability] Layer 2 (Backup AI) Failed. Switching to Local Fallback Engine.`);
     }
-
-    // LAYER 3 & 4: LOCAL FALLBACK ENGINE
-    // We catch ANY error (API limit, Network, Parsing) and return local rule-based results.
-    // This ensures the user NEVER sees an error screen.
     
-    // Simulate network delay for realism (optional)
     await new Promise(resolve => setTimeout(resolve, 600));
 
     switch (action) {
       case 'suggest_meal':
         return generateFallbackMeal(
           payload.preferences, 
-          payload.context?.mealType || 'Auto', 
-          payload.inventory
+          payload.context?.mealType || MealType.LUNCH, 
+          payload.inventory || []
         );
       
       case 'weekly_plan':
         return generateFallbackWeeklyPlan(payload.preferences);
 
       case 'shopping_list':
-        return generateFallbackShoppingList(payload.inventory);
+        return generateFallbackShoppingList(payload.inventory || []);
 
       case 'get_analytics':
         return generateFallbackAnalytics(payload.preferences);
@@ -258,6 +287,13 @@ export const runAIAction = async (
       case 'analyze_inventory':
         return generateFallbackInventoryAnalysis();
       
+      case 'generate_recipe':
+        return generateFallbackRecipe(
+          payload.context.budget,
+          payload.context.time,
+          (payload.context.ingredients || "").split(',').map((i: string) => i.trim())
+        );
+
       default:
         throw new Error("Unknown action");
     }

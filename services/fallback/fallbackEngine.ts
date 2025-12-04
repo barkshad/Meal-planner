@@ -7,14 +7,18 @@ import {
   ShoppingListResponse, 
   InventoryAnalysisResponse,
   AnalyticsData,
-  MealType
+  MealType,
+  Recipe
 } from "../../types";
 import { KENYAN_MEAL_DATABASE, SHOPPING_DEFAULTS, ANALYTICS_DEFAULTS } from "./fallbackData";
+import { OFFLINE_RECIPES } from "./offlineRecipes";
 
 // LAYER 4: RULE-BASED LOGIC ENGINE
 // This generates dynamic-looking responses without AI.
 
-const getRandomItem = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+function getRandomItem<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
 
 // 1. MEAL SUGGESTION FALLBACK
 export const generateFallbackMeal = (
@@ -42,8 +46,7 @@ export const generateFallbackMeal = (
   }
 
   // Use inventory to boost score (simple logic)
-  // In a real app, this would be more complex weighting
-  const inventoryNames = inventory.map(i => i.name.toLowerCase());
+  const inventoryNames = (inventory || []).map(i => i.name.toLowerCase());
   
   const selectedMeal = candidates.length > 0 
     ? getRandomItem(candidates) 
@@ -71,6 +74,38 @@ export const generateFallbackMeal = (
   };
 };
 
+// --- NEW RECIPE FALLBACK ---
+export const generateFallbackRecipe = (
+  budget: number,
+  time: number,
+  ingredients: string[]
+): Recipe => {
+  let candidates = OFFLINE_RECIPES;
+
+  // Filter by budget
+  candidates = candidates.filter(r => r.estimated_cost_ksh <= budget);
+
+  // Filter by time
+  candidates = candidates.filter(r => r.cook_time_minutes <= time);
+
+  // Score based on ingredient match
+  if (ingredients && ingredients.length > 0) {
+    candidates.sort((a, b) => {
+      const scoreA = (a.ingredients || []).filter(ing => ingredients.some(userIng => ing.toLowerCase().includes(userIng.toLowerCase()))).length;
+      const scoreB = (b.ingredients || []).filter(ing => ingredients.some(userIng => ing.toLowerCase().includes(userIng.toLowerCase()))).length;
+      return scoreB - scoreA; // Sort descending by score
+    });
+  }
+  
+  // Return the best match or a random one from the filtered list
+  if (candidates.length > 0) {
+    return candidates[0];
+  }
+
+  // Absolute fallback if no filters match
+  return getRandomItem(OFFLINE_RECIPES.filter(r => r.estimated_cost_ksh < 150));
+};
+
 // 2. WEEKLY PLAN FALLBACK
 export const generateFallbackWeeklyPlan = (prefs: UserPreferences): WeeklyPlanResponse => {
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -90,7 +125,6 @@ export const generateFallbackWeeklyPlan = (prefs: UserPreferences): WeeklyPlanRe
     dayCost += bfast.cost;
 
     // Lunch
-    // Try to pick something that fits remaining daily budget
     const lunchCandidates = KENYAN_MEAL_DATABASE.filter(m => 
       (m.type === MealType.LUNCH || m.type === MealType.DINNER) && 
       m.cost <= (dailyBudget - dayCost)
@@ -128,8 +162,7 @@ export const generateFallbackWeeklyPlan = (prefs: UserPreferences): WeeklyPlanRe
 
 // 3. SHOPPING LIST FALLBACK
 export const generateFallbackShoppingList = (inventory: FoodItem[]): ShoppingListResponse => {
-  // Logic: Suggest items from defaults that aren't in inventory
-  const inventoryNames = inventory.map(i => i.name.toLowerCase());
+  const inventoryNames = (inventory || []).map(i => i.name.toLowerCase());
   
   const needed = SHOPPING_DEFAULTS.filter(def => 
     !inventoryNames.some(inv => inv.includes(def.item.toLowerCase()))
@@ -137,7 +170,7 @@ export const generateFallbackShoppingList = (inventory: FoodItem[]): ShoppingLis
 
   return {
     shopping_list: needed.length > 0 ? needed : SHOPPING_DEFAULTS.slice(0, 3),
-    estimated_total_cost: needed.length > 0 ? needed.length * 150 : 450 // Rough estimate
+    estimated_total_cost: needed.length > 0 ? needed.length * 150 : 450
   };
 };
 
@@ -146,7 +179,7 @@ export const generateFallbackAnalytics = (prefs: UserPreferences): AnalyticsData
   return {
     weekly_spending_trend: ANALYTICS_DEFAULTS.trends,
     category_breakdown: ANALYTICS_DEFAULTS.categories,
-    projected_savings: Math.floor(prefs.weeklyBudget * 0.15), // Assume 15% savings
+    projected_savings: Math.floor(prefs.weeklyBudget * 0.15),
     price_alerts: ANALYTICS_DEFAULTS.alerts
   };
 };

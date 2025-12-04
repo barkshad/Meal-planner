@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { MealResponse } from '../types';
 import { CheckCircle2, AlertCircle, Utensils, DollarSign, Clock, RefreshCw } from 'lucide-react';
@@ -35,7 +36,7 @@ export const ResultCard: React.FC<ResultCardProps> = ({ data, onReset }) => {
 
       <div className="p-6 bg-white">
         <div className="space-y-4 mb-8">
-          {data.suggestions.map((item, index) => (
+          {data.suggestions?.map((item, index) => (
             <div key={index} className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-emerald-200 transition-colors group">
                <div className="mt-1 bg-emerald-100 text-emerald-600 rounded-full p-1.5">
                  <CheckCircle2 size={16} />

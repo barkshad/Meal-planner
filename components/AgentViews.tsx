@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { WeeklyPlanResponse, ShoppingListResponse, InventoryAnalysisResponse } from '../types';
 import { Calendar, ShoppingCart, Lightbulb, CheckCircle2, TrendingUp, AlertCircle, ArrowRight } from 'lucide-react';
@@ -27,14 +28,14 @@ export const WeeklyPlanView: React.FC<ViewProps<WeeklyPlanResponse>> = ({ data }
         </div>
 
         <div className="space-y-4">
-          {data.weekly_plan.map((day, i) => (
+          {data.weekly_plan?.map((day, i) => (
             <div key={i} className="bg-slate-50 rounded-2xl p-4 border border-slate-100 hover:bg-white hover:shadow-md transition-all">
               <div className="flex justify-between items-center mb-3">
                 <h3 className="font-bold text-indigo-700">{day.day}</h3>
                 <span className="text-xs font-bold text-slate-600 bg-white px-2 py-1 rounded border border-slate-200">KES {day.day_total}</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {day.meals.map((meal, j) => (
+                {day.meals?.map((meal, j) => (
                   <div key={j} className="bg-white p-3 rounded-xl border border-slate-100 text-sm">
                     <span className="text-[10px] text-indigo-500 font-bold uppercase block mb-1">{meal.meal_type}</span>
                     <span className="text-slate-700 font-medium">{meal.name}</span>
@@ -65,7 +66,7 @@ export const ShoppingListView: React.FC<ViewProps<ShoppingListResponse>> = ({ da
       </div>
 
       <div className="space-y-3">
-        {data.shopping_list.map((item, i) => (
+        {data.shopping_list?.map((item, i) => (
           <div key={i} className="flex items-start gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-orange-200 transition-all group">
              <div className="mt-1">
                <div className="w-5 h-5 border-2 border-slate-300 rounded-md group-hover:border-orange-400 transition-colors cursor-pointer bg-white"></div>
@@ -79,7 +80,7 @@ export const ShoppingListView: React.FC<ViewProps<ShoppingListResponse>> = ({ da
              </div>
           </div>
         ))}
-        {data.shopping_list.length === 0 && (
+        {(data.shopping_list?.length === 0 || !data.shopping_list) && (
           <p className="text-center text-slate-500 py-8">Nothing to buy! You're all set.</p>
         )}
       </div>
@@ -98,7 +99,7 @@ export const InventoryAnalysisView: React.FC<ViewProps<InventoryAnalysisResponse
           <h3 className="font-bold text-slate-800">Meals you can make now</h3>
         </div>
         <ul className="space-y-2">
-          {data.cheap_meal_options.map((opt, i) => (
+          {data.cheap_meal_options?.map((opt, i) => (
             <li key={i} className="flex items-start gap-3 text-sm text-slate-600">
               <ArrowRight size={14} className="mt-1 text-emerald-500" />
               {opt}
@@ -114,7 +115,7 @@ export const InventoryAnalysisView: React.FC<ViewProps<InventoryAnalysisResponse
           <h3 className="font-bold text-slate-800">Extend your food</h3>
         </div>
         <ul className="space-y-2">
-          {data.ways_to_extend_inventory.map((opt, i) => (
+          {data.ways_to_extend_inventory?.map((opt, i) => (
             <li key={i} className="flex items-start gap-3 text-sm text-slate-600">
               <ArrowRight size={14} className="mt-1 text-blue-500" />
               {opt}
@@ -130,7 +131,7 @@ export const InventoryAnalysisView: React.FC<ViewProps<InventoryAnalysisResponse
           <h3 className="font-bold text-slate-800">Smart Additions</h3>
         </div>
         <ul className="space-y-2">
-          {data.recommended_additions.map((opt, i) => (
+          {data.recommended_additions?.map((opt, i) => (
             <li key={i} className="flex items-start gap-3 text-sm text-slate-600">
               <ArrowRight size={14} className="mt-1 text-purple-500" />
               {opt}

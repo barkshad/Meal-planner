@@ -37,12 +37,30 @@ export interface UserPreferences {
   weeklyBudget: number;
 }
 
+// --- RECIPE SYSTEM TYPES ---
+export interface RecipeStep {
+  step: number;
+  instruction: string;
+}
+
+export interface Recipe {
+  id: string;
+  title: string;
+  ingredients: string[];
+  steps: RecipeStep[];
+  estimated_cost_ksh: number;
+  cook_time_minutes: number;
+  category: string;
+}
+// --- END RECIPE SYSTEM TYPES ---
+
 // User & Auth
 export interface UserProfile {
   name: string;
   email: string;
   preferences: UserPreferences;
   savedPlans: WeeklyPlanResponse[];
+  savedRecipes: Recipe[]; // Added for future use
 }
 
 export interface AuthState {
