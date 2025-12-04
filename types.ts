@@ -144,3 +144,24 @@ export interface AnalyticsData {
   projected_savings: number;
   price_alerts: string[];
 }
+
+// Maps & Restaurants
+export interface Restaurant {
+  place_id: string;
+  name: string;
+  rating?: number;
+  price_level?: number; // 0-4
+  vicinity: string; // address
+  geometry: {
+    location: {
+      lat: number;
+      lng: number;
+    };
+  };
+  opening_hours?: {
+    open_now: boolean;
+  };
+  distanceText?: string;
+  durationText?: string;
+  cuisine?: string;
+}

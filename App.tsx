@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   FoodItem, 
@@ -26,12 +27,13 @@ import { RecipesView } from './components/RecipesView';
 import { SpinWheel } from './components/SpinWheel';
 import { CoupleMode } from './components/CoupleMode';
 import { LoadingScreen } from './components/LoadingScreen';
+import { RestaurantsView } from './components/RestaurantsView'; // Import New View
 import { runAIAction } from './services/geminiService';
 import { OFFLINE_RECIPES } from './services/fallback/offlineRecipes';
 import { selectMealsFromDatabase } from './services/fallback/fallbackEngine';
-import { ChefHat, Loader2, Home, Calendar, ShoppingCart, Archive, Wallet, LogOut, BarChart3, Sparkles, Utensils, Dices, Trophy, Heart, MapPin, Smile } from 'lucide-react';
+import { ChefHat, Loader2, Home, Calendar, ShoppingCart, Archive, Wallet, LogOut, BarChart3, Sparkles, Utensils, Dices, Trophy, Heart, MapPin, Smile, Map } from 'lucide-react';
 
-type ViewMode = 'meal' | 'week' | 'shop' | 'pantry' | 'analytics' | 'recipes' | 'challenges';
+type ViewMode = 'meal' | 'week' | 'shop' | 'pantry' | 'analytics' | 'recipes' | 'challenges' | 'restaurants';
 
 const LS_KEYS = {
   USER: 'mealmind_user',
@@ -184,7 +186,7 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    if (user && currentView !== 'meal' && currentView !== 'recipes') {
+    if (user && currentView !== 'meal' && currentView !== 'recipes' && currentView !== 'restaurants') {
       handleFetchData(currentView);
     }
   }, [currentView, user]);
@@ -200,7 +202,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen relative text-slate-800 selection:bg-emerald-100 font-sans bg-slate-50 pb-20">
+    <div className="min-h-screen relative text-slate-800 selection:bg-emerald-100 font-sans bg-slate-50 pb-24">
       
       {showOnboarding && <Onboarding onComplete={() => setShowOnboarding(false)} />}
       
@@ -243,7 +245,7 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="relative z-10 flex-1 max-w-3xl mx-auto w-full px-4 pt-20 pb-32">
+      <main className="relative z-10 flex-1 max-w-3xl mx-auto w-full px-4 pt-20">
         {loading ? (
             <LoadingScreen mood={preferences.mood} />
         ) : (
@@ -338,6 +340,10 @@ const App: React.FC = () => {
               </div>
             )}
             
+            {currentView === 'restaurants' && (
+              <RestaurantsView />
+            )}
+
             {currentView === 'challenges' && (
                <div className="space-y-4 animate-slide-up">
                  <h2 className="text-2xl font-bold text-slate-800 mb-4 flex items-center gap-2"><Trophy className="text-orange-500"/> Challenges</h2>
@@ -386,46 +392,53 @@ const App: React.FC = () => {
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-6 left-4 right-4 z-50">
-        <div className="max-w-xl mx-auto glass-panel p-2 grid grid-cols-6 justify-between items-center shadow-2xl shadow-slate-300">
+        <div className="max-w-xl mx-auto glass-panel p-2 grid grid-cols-7 justify-between items-center shadow-2xl shadow-slate-300">
           <NavButton 
             active={currentView === 'meal'} 
             onClick={() => setCurrentView('meal')} 
-            icon={<Home size={22} />} 
+            icon={<Home size={20} />} 
             label="Today" 
             color="emerald"
           />
           <NavButton 
             active={currentView === 'week'} 
             onClick={() => setCurrentView('week')} 
-            icon={<Calendar size={22} />} 
+            icon={<Calendar size={20} />} 
             label="Week" 
             color="indigo"
           />
            <NavButton 
             active={currentView === 'recipes'} 
             onClick={() => setCurrentView('recipes')} 
-            icon={<Utensils size={22} />} 
+            icon={<Utensils size={20} />} 
             label="Recipes" 
             color="blue"
           />
           <NavButton 
+            active={currentView === 'restaurants'} 
+            onClick={() => setCurrentView('restaurants')} 
+            icon={<Map size={20} />} 
+            label="Maps" 
+            color="red"
+          />
+          <NavButton 
             active={currentView === 'shop'} 
             onClick={() => setCurrentView('shop')} 
-            icon={<ShoppingCart size={22} />} 
+            icon={<ShoppingCart size={20} />} 
             label="Shop" 
             color="orange"
           />
           <NavButton 
             active={currentView === 'pantry'} 
             onClick={() => setCurrentView('pantry')} 
-            icon={<Archive size={22} />} 
+            icon={<Archive size={20} />} 
             label="Soko" 
             color="purple"
           />
           <NavButton 
             active={currentView === 'analytics'} 
             onClick={() => setCurrentView('analytics')} 
-            icon={<BarChart3 size={22} />} 
+            icon={<BarChart3 size={20} />} 
             label="Stats" 
             color="blue"
           />
@@ -443,12 +456,13 @@ const NavButton: React.FC<{active: boolean, onClick: () => void, icon: React.Rea
     orange: 'text-orange-600 bg-orange-50',
     purple: 'text-purple-600 bg-purple-50',
     blue: 'text-blue-600 bg-blue-50',
+    red: 'text-red-600 bg-red-50',
   };
 
   return (
     <button 
       onClick={onClick}
-      className={`flex flex-col items-center gap-1 p-3 rounded-xl w-full transition-all duration-300 relative overflow-hidden btn-hover-effect ${
+      className={`flex flex-col items-center gap-1 p-2 rounded-xl w-full transition-all duration-300 relative overflow-hidden btn-hover-effect ${
         active 
           ? activeClasses[color as keyof typeof activeClasses]
           : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
@@ -457,7 +471,7 @@ const NavButton: React.FC<{active: boolean, onClick: () => void, icon: React.Rea
       <div className={`transition-transform duration-300 ${active ? 'scale-110' : ''}`}>
         {icon}
       </div>
-      <span className={`text-[10px] font-bold uppercase tracking-wider ${active ? 'opacity-100' : 'opacity-0 scale-0 hidden sm:block'} transition-all`}>
+      <span className={`text-[9px] font-bold uppercase tracking-wider ${active ? 'opacity-100' : 'opacity-0 scale-0 hidden sm:block'} transition-all`}>
         {label}
       </span>
     </button>
