@@ -31,7 +31,7 @@ export const ResultCard: React.FC<ResultCardProps> = ({ data, onReset }) => {
               )}
               {data.auto_adjusted && (
                 <span className="px-2 py-0.5 rounded-md bg-yellow-400/20 border border-yellow-400/30 text-yellow-50 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-                   <AlertTriangle size={12} /> Adjusted
+                   <AlertTriangle size={12} /> Auto Adjusted
                 </span>
               )}
             </div>

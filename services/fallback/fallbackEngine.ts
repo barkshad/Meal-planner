@@ -10,7 +10,7 @@ import {
   MealType,
   Recipe
 } from "../../types";
-import { KENYAN_MEAL_DATABASE, SHOPPING_DEFAULTS, ANALYTICS_DEFAULTS } from "./fallbackData";
+import { SHOPPING_DEFAULTS, ANALYTICS_DEFAULTS } from "./fallbackData";
 import { OFFLINE_RECIPES } from "./offlineRecipes";
 
 // LAYER 4: GUARANTEED RESULTS ENGINE
@@ -29,7 +29,7 @@ interface ValidMealResult {
  * 3. Returns the recipe and a flag indicating if we had to adjust logic to find it.
  */
 export const getValidMeals = (budget: number, strict: boolean = false): ValidMealResult => {
-  // 1. Strict Filter
+  // 1. Strict Filter: Try to find meals exactly within budget
   let validRecipes = OFFLINE_RECIPES.filter(r => r.estimated_cost_ksh <= budget);
 
   if (validRecipes.length > 0) {
@@ -39,37 +39,29 @@ export const getValidMeals = (budget: number, strict: boolean = false): ValidMea
     };
   }
 
-  // 2. If Strict Mode is ON, we still return the cheapest but mark it as a "fail" in message essentially,
-  // or return null? The requirement says "Never fail to return a result". 
-  // So we will return the cheapest but flag it.
-  
-  // Sort by cost ascending
+  // 2. Expansion: If no results, try budget + 10 KES (small buffer)
+  if (!strict) {
+     validRecipes = OFFLINE_RECIPES.filter(r => r.estimated_cost_ksh <= budget + 10);
+     if (validRecipes.length > 0) {
+        return {
+          recipe: validRecipes[Math.floor(Math.random() * validRecipes.length)],
+          adjusted: true,
+          message: `Slightly adjusted budget to find a meal.`
+        };
+     }
+  }
+
+  // 3. Ultimate Fallback: Return the absolute cheapest meal in DB
+  // This guarantees we NEVER return null/error.
   const sortedRecipes = [...OFFLINE_RECIPES].sort((a, b) => a.estimated_cost_ksh - b.estimated_cost_ksh);
   const cheapest = sortedRecipes[0];
 
-  if (strict) {
-    // In strict mode, if we can't find anything, we still technically return the cheapest 
-    // but the UI might want to know it violated the strict constraint.
-    // However, for UX "Never fail", we return it with a warning.
-    return {
-      recipe: cheapest,
-      adjusted: true,
-      message: `No meals found under KES ${budget}. Smallest option shown.`
-    };
-  }
-
-  // 3. Auto-Fix Mode (Default)
-  // We return the cheapest option available.
   return {
     recipe: cheapest,
     adjusted: true,
-    message: `Budget too low for standard meals. Showing most affordable option.`
+    message: `Budget too low for standard meals. Showing most affordable option (KES ${cheapest.estimated_cost_ksh}).`
   };
 };
-
-function getRandomItem<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
 
 // 1. GUARANTEED MEAL SUGGESTION FALLBACK
 export const generateFallbackMeal = (
@@ -92,7 +84,7 @@ export const generateFallbackMeal = (
     : `Fits within your KES ${prefs.budget} budget.`;
 
   if (result.adjusted) {
-    reason = "Budget adjusted to finding the lowest cost option available.";
+    reason = result.message || "Budget adjusted to find an affordable meal.";
   }
 
   return {
@@ -105,7 +97,7 @@ export const generateFallbackMeal = (
     total_meal_cost: selectedMeal.estimated_cost_ksh,
     within_budget: selectedMeal.estimated_cost_ksh <= prefs.budget,
     auto_adjusted: result.adjusted,
-    message: result.message || "Local recommendation found."
+    message: result.adjusted ? "Budget Adjusted" : "Local Recommendation"
   };
 };
 
@@ -126,18 +118,17 @@ export const generateFallbackWeeklyPlan = (prefs: UserPreferences): WeeklyPlanRe
   const weeklyPlan = [];
   let totalCost = 0;
   
-  const dailyBudget = prefs.weeklyBudget / 7;
+  const dailyBudget = Math.floor(prefs.weeklyBudget / 7);
 
   // We need to distribute meals so day_total <= dailyBudget
-  // Strategy: Find a breakfast + Lunch/Dinner combo that fits.
   
   for (const day of days) {
     let dayCost = 0;
     const meals = [];
 
-    // 1. Breakfast (Try to find something cheap, ~20-30% of daily budget)
-    const breakfastBudget = Math.floor(dailyBudget * 0.3);
-    const bfResult = getValidMeals(breakfastBudget, false); // Strict false to always get something
+    // 1. Breakfast (Try to find something cheap, ~20% of daily budget)
+    const breakfastBudget = Math.floor(dailyBudget * 0.25);
+    const bfResult = getValidMeals(Math.max(20, breakfastBudget), false); 
     meals.push({ 
         meal_type: "Breakfast", 
         name: bfResult.recipe.title, 
@@ -145,13 +136,11 @@ export const generateFallbackWeeklyPlan = (prefs: UserPreferences): WeeklyPlanRe
     });
     dayCost += bfResult.recipe.estimated_cost_ksh;
 
-    // 2. Lunch/Dinner (Remaining budget)
-    const remaining = dailyBudget - dayCost;
-    // Split remaining if 3 meals, or use all for lunch if 2 meals
-    const mainMealBudget = prefs.mealsPerDay > 2 ? remaining / 2 : remaining;
+    // 2. Lunch (remaining split)
+    const remaining = Math.max(0, dailyBudget - dayCost);
+    const lunchBudget = Math.floor(remaining * 0.4);
     
-    // Lunch
-    const lunchResult = getValidMeals(mainMealBudget, false);
+    const lunchResult = getValidMeals(Math.max(40, lunchBudget), false);
     meals.push({ 
         meal_type: "Lunch", 
         name: lunchResult.recipe.title, 
@@ -159,16 +148,15 @@ export const generateFallbackWeeklyPlan = (prefs: UserPreferences): WeeklyPlanRe
     });
     dayCost += lunchResult.recipe.estimated_cost_ksh;
 
-    // Dinner (if needed)
-    if (prefs.mealsPerDay > 2) {
-         const dinnerResult = getValidMeals(Math.max(50, dailyBudget - dayCost), false);
-         meals.push({ 
-            meal_type: "Dinner", 
-            name: dinnerResult.recipe.title, 
-            cost: dinnerResult.recipe.estimated_cost_ksh 
-        });
-        dayCost += dinnerResult.recipe.estimated_cost_ksh;
-    }
+    // 3. Dinner (rest)
+    const dinnerBudget = Math.max(50, dailyBudget - dayCost);
+    const dinnerResult = getValidMeals(dinnerBudget, false);
+    meals.push({ 
+        meal_type: "Dinner", 
+        name: dinnerResult.recipe.title, 
+        cost: dinnerResult.recipe.estimated_cost_ksh 
+    });
+    dayCost += dinnerResult.recipe.estimated_cost_ksh;
 
     weeklyPlan.push({
       day,

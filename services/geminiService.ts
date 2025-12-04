@@ -151,10 +151,6 @@ const recipeResponseSchema = {
 
 type Action = 'suggest_meal' | 'weekly_plan' | 'shopping_list' | 'analyze_inventory' | 'get_analytics' | 'generate_recipe';
 
-async function callBackupAI(action: Action, payload: any): Promise<any> {
-    throw new Error("Backup AI service not configured");
-}
-
 export const runAIAction = async (
   action: Action,
   payload: {
@@ -177,14 +173,15 @@ export const runAIAction = async (
       case 'suggest_meal':
         prompt = `
           ACTION: suggest_meal
-          STRICT CONSTRAINT: The total_meal_cost MUST BE LESS THAN OR EQUAL TO ${payload.preferences.budget}. 
-          If you cannot find a meal under ${payload.preferences.budget}, find the absolute cheapest edible Kenyan meal possible.
+          STRICT BUDGET RULE: Total meal cost MUST be <= KES ${payload.preferences.budget}.
+          If you cannot find a meal strictly under ${payload.preferences.budget}, try to find the absolute cheapest edible meal possible but flag it as over budget.
+          
           User Budget: KES ${payload.preferences.budget}
           Diet: ${payload.preferences.dietType}
           Current Inventory: 
           ${inventoryStr}
           
-          Task: Suggest ONE meal for ${payload.context?.mealType || 'any time'} that uses the inventory to save money.
+          Task: Suggest ONE Kenyan meal for ${payload.context?.mealType || 'any time'} that prioritizes the user's budget.
         `;
         schema = mealResponseSchema;
         break;
@@ -192,10 +189,10 @@ export const runAIAction = async (
       case 'weekly_plan':
         prompt = `
           ACTION: weekly_plan
-          STRICT CONSTRAINT: The total_cost MUST BE LESS THAN OR EQUAL TO ${payload.preferences.weeklyBudget}.
+          STRICT BUDGET RULE: Total weekly cost MUST be <= KES ${payload.preferences.weeklyBudget}.
           Weekly Budget: KES ${payload.preferences.weeklyBudget}
           Diet: ${payload.preferences.dietType}
-          Task: Create a 7-day meal plan (Breakfast, Lunch, Dinner).
+          Task: Create a 7-day Kenyan meal plan (Breakfast, Lunch, Dinner).
         `;
         schema = weeklyPlanSchema;
         break;
@@ -232,11 +229,11 @@ export const runAIAction = async (
       case 'generate_recipe':
         prompt = `
           ACTION: generate_recipe
-          STRICT CONSTRAINT: estimated_cost_ksh MUST BE <= ${payload.context.budget}.
+          STRICT BUDGET RULE: Recipe cost MUST be <= KES ${payload.context.budget}.
           User Budget: KES ${payload.context.budget}
           Available Time: ${payload.context.time} minutes
           User has these ingredients: ${payload.context.ingredients}
-          Task: Generate a simple, single Kenyan recipe that fits these constraints. Be creative but practical. The ID should be a unique string.
+          Task: Generate a simple, single Kenyan recipe that fits these constraints. ID must be unique string.
         `;
         schema = recipeResponseSchema;
         break;
@@ -260,20 +257,30 @@ export const runAIAction = async (
     const parsed = JSON.parse(cleanText);
 
     // --- CRITICAL VALIDATION LAYER ---
-    // If AI hallucinates a price that is too high, reject it and fallback.
+    // If AI hallucinates a price that is too high, reject it and fallback to Guaranteed Engine.
     
     if (action === 'suggest_meal') {
-      if (parsed.total_meal_cost > payload.preferences.budget * 1.1) { // Allow 10% margin error from AI
-        console.warn("AI returned over-budget meal. Switching to guaranteed fallback.");
+      const budgetLimit = payload.preferences.budget;
+      // Allow 5% margin of error for AI
+      if (parsed.total_meal_cost > budgetLimit * 1.05) { 
+        console.warn(`AI Violation: Suggestion (KES ${parsed.total_meal_cost}) exceeds budget (KES ${budgetLimit}). Fallback triggered.`);
         throw new Error("AI Budget Violation");
       }
     }
     
     if (action === 'generate_recipe') {
-      if (parsed.estimated_cost_ksh > payload.context.budget * 1.1) {
-        console.warn("AI returned over-budget recipe. Switching to guaranteed fallback.");
+      const budgetLimit = payload.context.budget;
+      if (parsed.estimated_cost_ksh > budgetLimit * 1.05) {
+        console.warn(`AI Violation: Recipe (KES ${parsed.estimated_cost_ksh}) exceeds budget (KES ${budgetLimit}). Fallback triggered.`);
         throw new Error("AI Budget Violation");
       }
+    }
+
+    if (action === 'weekly_plan') {
+       if (parsed.total_cost > payload.preferences.weeklyBudget * 1.1) {
+          console.warn("AI Violation: Weekly plan exceeds budget. Fallback triggered.");
+          throw new Error("AI Budget Violation");
+       }
     }
 
     return parsed;
@@ -281,9 +288,11 @@ export const runAIAction = async (
   } catch (error) {
     console.warn(`[MealMind Reliability] Layer 1 (Gemini) Failed or Budget Violated for action: ${action}. Reason:`, error);
     
-    await new Promise(resolve => setTimeout(resolve, 300));
+    // GUARANTEED FALLBACK ROUTING
+    // This ensures that even if AI fails, we return a valid, budget-conscious result from our expanded database.
+    
+    await new Promise(resolve => setTimeout(resolve, 500)); // Small artificial delay for UX smoothness
 
-    // Fallback Routing
     switch (action) {
       case 'suggest_meal':
         return generateFallbackMeal(
