@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { MealResponse } from '../types';
-import { CheckCircle2, AlertCircle, Utensils, DollarSign, Clock, RefreshCw } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Utensils, DollarSign, Clock, RefreshCw, ShieldCheck, AlertTriangle } from 'lucide-react';
 
 interface ResultCardProps {
   data: MealResponse;
@@ -22,6 +22,18 @@ export const ResultCard: React.FC<ResultCardProps> = ({ data, onReset }) => {
               <span className="px-2 py-0.5 rounded-md bg-black/20 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
                  <Clock size={12} /> {data.meal_type}
               </span>
+              
+              {/* STATUS BADGES */}
+              {data.within_budget && !data.auto_adjusted && (
+                <span className="px-2 py-0.5 rounded-md bg-green-400/20 border border-green-400/30 text-green-50 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                   <ShieldCheck size={12} /> Budget Safe
+                </span>
+              )}
+              {data.auto_adjusted && (
+                <span className="px-2 py-0.5 rounded-md bg-yellow-400/20 border border-yellow-400/30 text-yellow-50 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                   <AlertTriangle size={12} /> Adjusted
+                </span>
+              )}
             </div>
             <h2 className="text-3xl font-bold tracking-tight">Recommendation</h2>
           </div>

@@ -17,6 +17,7 @@ export interface MealResponse {
   suggestions: MealSuggestionItem[];
   total_meal_cost: number;
   within_budget: boolean;
+  auto_adjusted?: boolean; // New flag for Guaranteed Results
   message?: string;
 }
 
@@ -35,6 +36,7 @@ export interface UserPreferences {
   mealsPerDay: number;
   dietType: DietType;
   weeklyBudget: number;
+  strictMode?: boolean; // New preference
 }
 
 // --- RECIPE SYSTEM TYPES ---
@@ -60,7 +62,7 @@ export interface UserProfile {
   email: string;
   preferences: UserPreferences;
   savedPlans: WeeklyPlanResponse[];
-  savedRecipes: Recipe[]; // Added for future use
+  savedRecipes: Recipe[]; 
 }
 
 export interface AuthState {

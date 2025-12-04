@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { 
   FoodItem, 
@@ -176,6 +177,8 @@ export const runAIAction = async (
       case 'suggest_meal':
         prompt = `
           ACTION: suggest_meal
+          STRICT CONSTRAINT: The total_meal_cost MUST BE LESS THAN OR EQUAL TO ${payload.preferences.budget}. 
+          If you cannot find a meal under ${payload.preferences.budget}, find the absolute cheapest edible Kenyan meal possible.
           User Budget: KES ${payload.preferences.budget}
           Diet: ${payload.preferences.dietType}
           Current Inventory: 
@@ -189,6 +192,7 @@ export const runAIAction = async (
       case 'weekly_plan':
         prompt = `
           ACTION: weekly_plan
+          STRICT CONSTRAINT: The total_cost MUST BE LESS THAN OR EQUAL TO ${payload.preferences.weeklyBudget}.
           Weekly Budget: KES ${payload.preferences.weeklyBudget}
           Diet: ${payload.preferences.dietType}
           Task: Create a 7-day meal plan (Breakfast, Lunch, Dinner).
@@ -228,6 +232,7 @@ export const runAIAction = async (
       case 'generate_recipe':
         prompt = `
           ACTION: generate_recipe
+          STRICT CONSTRAINT: estimated_cost_ksh MUST BE <= ${payload.context.budget}.
           User Budget: KES ${payload.context.budget}
           Available Time: ${payload.context.time} minutes
           User has these ingredients: ${payload.context.ingredients}
@@ -237,14 +242,13 @@ export const runAIAction = async (
         break;
     }
     
-    // ... existing AI call logic ...
     const response = await ai.models.generateContent({
       model: modelId,
       contents: prompt,
       config: {
         responseMimeType: "application/json",
         responseSchema: schema,
-        systemInstruction: "You are MealMind Kenya. Output STRICT JSON.",
+        systemInstruction: "You are MealMind Kenya. Output STRICT JSON. Respect Budgets STRICTLY.",
         maxOutputTokens: 8000, 
       },
     });
@@ -253,20 +257,33 @@ export const runAIAction = async (
     if (!text) throw new Error("No response from AI");
     
     const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    return JSON.parse(cleanText);
+    const parsed = JSON.parse(cleanText);
 
-
-  } catch (error) {
-    console.warn(`[MealMind Reliability] Layer 1 (Gemini) Failed for action: ${action}. Reason:`, error);
-
-    try {
-        return await callBackupAI(action, payload);
-    } catch (backupError) {
-        console.warn(`[MealMind Reliability] Layer 2 (Backup AI) Failed. Switching to Local Fallback Engine.`);
+    // --- CRITICAL VALIDATION LAYER ---
+    // If AI hallucinates a price that is too high, reject it and fallback.
+    
+    if (action === 'suggest_meal') {
+      if (parsed.total_meal_cost > payload.preferences.budget * 1.1) { // Allow 10% margin error from AI
+        console.warn("AI returned over-budget meal. Switching to guaranteed fallback.");
+        throw new Error("AI Budget Violation");
+      }
     }
     
-    await new Promise(resolve => setTimeout(resolve, 600));
+    if (action === 'generate_recipe') {
+      if (parsed.estimated_cost_ksh > payload.context.budget * 1.1) {
+        console.warn("AI returned over-budget recipe. Switching to guaranteed fallback.");
+        throw new Error("AI Budget Violation");
+      }
+    }
 
+    return parsed;
+
+  } catch (error) {
+    console.warn(`[MealMind Reliability] Layer 1 (Gemini) Failed or Budget Violated for action: ${action}. Reason:`, error);
+    
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    // Fallback Routing
     switch (action) {
       case 'suggest_meal':
         return generateFallbackMeal(
