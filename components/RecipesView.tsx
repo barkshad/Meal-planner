@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Recipe, UserPreferences, FoodItem } from '../types';
 import { runAIAction } from '../services/geminiService';
@@ -50,7 +49,7 @@ export const RecipesView: React.FC<RecipesViewProps> = ({ preferences, inventory
           <div className="p-2 rounded-xl bg-blue-50 border border-blue-100">
             <Utensils size={20} className="text-blue-600" />
           </div>
-          <h2 className="text-xl font-bold text-slate-800">Recipe Generator</h2>
+          <h2 className="text-xl font-bold text-slate-800">Recipe Finder</h2>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
@@ -99,7 +98,7 @@ export const RecipesView: React.FC<RecipesViewProps> = ({ preferences, inventory
             {loading ? (
               <Loader2 size={20} className="animate-spin" />
             ) : (
-              <><Sparkles size={20} /> <span>Generate Recipe</span></>
+              <><Sparkles size={20} /> <span>Get Meal Suggestions</span></>
             )}
           </div>
         </button>

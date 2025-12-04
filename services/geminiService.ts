@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { 
   FoodItem, 
@@ -11,33 +10,25 @@ import {
   generateFallbackShoppingList, 
   generateFallbackAnalytics,
   generateFallbackInventoryAnalysis,
-  generateFallbackRecipe
+  generateFallbackRecipe,
+  selectMealsFromDatabase,
+  getValidMeals
 } from "./fallback/fallbackEngine";
+import { OFFLINE_RECIPES } from "./fallback/offlineRecipes";
 
 // --- Schemas ---
 
-const mealResponseSchema = {
+const mealSelectionSchema = {
   type: Type.OBJECT,
   properties: {
-    meal_type: { type: Type.STRING },
-    suggestions: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          food: { type: Type.STRING },
-          estimated_cost: { type: Type.NUMBER },
-          reason: { type: Type.STRING }
-        }
-      }
-    },
-    total_meal_cost: { type: Type.NUMBER },
-    within_budget: { type: Type.BOOLEAN },
-    message: { type: Type.STRING }
+    selected_recipe_id: { type: Type.STRING },
+    reason_for_selection: { type: Type.STRING },
+    price_verification: { type: Type.NUMBER }
   },
-  required: ["meal_type", "suggestions", "total_meal_cost", "within_budget", "message"]
+  required: ["selected_recipe_id", "reason_for_selection", "price_verification"]
 };
 
+// Reuse other schemas...
 const weeklyPlanSchema = {
   type: Type.OBJECT,
   properties: {
@@ -122,31 +113,6 @@ const analyticsSchema = {
   }
 };
 
-const recipeResponseSchema = {
-  type: Type.OBJECT,
-  properties: {
-    id: { type: Type.STRING },
-    title: { type: Type.STRING },
-    ingredients: { type: Type.ARRAY, items: { type: Type.STRING } },
-    steps: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          step: { type: Type.NUMBER },
-          instruction: { type: Type.STRING },
-        },
-        required: ["step", "instruction"],
-      },
-    },
-    estimated_cost_ksh: { type: Type.NUMBER },
-    cook_time_minutes: { type: Type.NUMBER },
-    category: { type: Type.STRING },
-  },
-  required: ["id", "title", "ingredients", "steps", "estimated_cost_ksh", "cook_time_minutes", "category"],
-};
-
-
 // --- Orchestrator ---
 
 type Action = 'suggest_meal' | 'weekly_plan' | 'shopping_list' | 'analyze_inventory' | 'get_analytics' | 'generate_recipe';
@@ -163,36 +129,140 @@ export const runAIAction = async (
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const modelId = "gemini-2.5-flash"; 
-    const inventoryStr = (payload.inventory || []).map(i => `- ${i.name} (${i.cost} KES)`).join("\n");
+    const inventoryStr = (payload.inventory || []).map(i => `- ${i.name}`).join("\n");
 
+    // --- PRE-SELECTION LOGIC ---
+    // Instead of asking AI to generate, we filter the DB first.
+    
+    if (action === 'suggest_meal') {
+      // 1. Get Candidates
+      let candidates = selectMealsFromDatabase(
+        payload.preferences.budget, 
+        payload.context?.mealType, 
+        payload.preferences.dietType
+      );
+
+      // 2. If no strict matches, use the Guaranteed Fallback logic locally first
+      // This prevents sending empty lists to Gemini
+      if (candidates.length === 0) {
+        console.warn("No strict matches found in DB. Triggering local guarantee engine.");
+        return generateFallbackMeal(payload.preferences, payload.context?.mealType || MealType.AUTO, payload.inventory);
+      }
+
+      // 3. Prepare Prompt with LIMITED Candidates (Random Shuffle + Slice to avoid context overflow)
+      // We send simplified data to save tokens.
+      const shuffled = candidates.sort(() => 0.5 - Math.random()).slice(0, 20);
+      const candidateListJSON = JSON.stringify(shuffled.map(r => ({
+        id: r.id,
+        title: r.title,
+        cost: r.estimated_cost_ksh,
+        ingredients: r.ingredients
+      })));
+
+      const prompt = `
+        ACTION: SELECT_MEAL_FROM_LIST
+        
+        INSTRUCTIONS:
+        1. You are a meal selector. You do NOT create recipes.
+        2. You MUST select ONE recipe from the "Available Candidates" list below.
+        3. Choose the best match based on the User's Inventory and Preferences.
+        4. Your choice MUST have a cost <= ${payload.preferences.budget}.
+        
+        USER INVENTORY:
+        ${inventoryStr}
+        
+        USER PREFERENCES:
+        - Budget: KES ${payload.preferences.budget}
+        - Diet: ${payload.preferences.dietType}
+        - Desired Type: ${payload.context?.mealType || 'Any'}
+        
+        AVAILABLE CANDIDATES (JSON):
+        ${candidateListJSON}
+        
+        TASK: Return the 'selected_recipe_id' of the best match and a 'reason_for_selection'.
+      `;
+
+      const response = await ai.models.generateContent({
+        model: modelId,
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: mealSelectionSchema,
+        },
+      });
+
+      const parsed = JSON.parse(response.text || "{}");
+      
+      // 4. Hydrate Result
+      const selectedId = parsed.selected_recipe_id;
+      const fullRecipe = OFFLINE_RECIPES.find(r => r.id === selectedId);
+
+      if (!fullRecipe) {
+        throw new Error("AI selected an ID that does not exist in the DB.");
+      }
+
+      return {
+        meal_type: payload.context?.mealType || fullRecipe.category,
+        suggestions: [{
+          food: fullRecipe.title,
+          estimated_cost: fullRecipe.estimated_cost_ksh,
+          reason: parsed.reason_for_selection
+        }],
+        total_meal_cost: fullRecipe.estimated_cost_ksh,
+        within_budget: fullRecipe.estimated_cost_ksh <= payload.preferences.budget,
+        auto_adjusted: false,
+        message: "AI Selected from Database"
+      };
+    }
+
+    if (action === 'generate_recipe') {
+      // 1. Find best match in DB for these specific ingredients
+      // We re-use suggest logic but constrained by specific ingredients context
+      const budget = payload.context.budget;
+      const candidates = selectMealsFromDatabase(budget); // loose type
+      const shuffled = candidates.slice(0, 30);
+      
+      const prompt = `
+        ACTION: FIND_MATCHING_RECIPE
+        
+        INSTRUCTIONS:
+        1. Select the recipe that best uses these user ingredients: ${payload.context.ingredients}
+        2. MUST be from the provided list.
+        3. Max Budget: ${budget}
+        
+        AVAILABLE RECIPES:
+        ${JSON.stringify(shuffled.map(r => ({id: r.id, title: r.title, ingredients: r.ingredients, cost: r.estimated_cost_ksh})))}
+      `;
+
+      const response = await ai.models.generateContent({
+        model: modelId,
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: mealSelectionSchema,
+        },
+      });
+      
+      const parsed = JSON.parse(response.text || "{}");
+      const fullRecipe = OFFLINE_RECIPES.find(r => r.id === parsed.selected_recipe_id);
+      
+      if (!fullRecipe) throw new Error("Recipe not found");
+      return fullRecipe;
+    }
+
+    // --- OTHER ACTIONS (Use Standard Generation or Fallback if simple) ---
+    
     let prompt = "";
     let schema: any;
 
-    // Prompt construction
     switch (action) {
-      case 'suggest_meal':
-        prompt = `
-          ACTION: suggest_meal
-          STRICT BUDGET RULE: Total meal cost MUST be <= KES ${payload.preferences.budget}.
-          If you cannot find a meal strictly under ${payload.preferences.budget}, try to find the absolute cheapest edible meal possible but flag it as over budget.
-          
-          User Budget: KES ${payload.preferences.budget}
-          Diet: ${payload.preferences.dietType}
-          Current Inventory: 
-          ${inventoryStr}
-          
-          Task: Suggest ONE Kenyan meal for ${payload.context?.mealType || 'any time'} that prioritizes the user's budget.
-        `;
-        schema = mealResponseSchema;
-        break;
-
       case 'weekly_plan':
         prompt = `
           ACTION: weekly_plan
           STRICT BUDGET RULE: Total weekly cost MUST be <= KES ${payload.preferences.weeklyBudget}.
           Weekly Budget: KES ${payload.preferences.weeklyBudget}
           Diet: ${payload.preferences.dietType}
-          Task: Create a 7-day Kenyan meal plan (Breakfast, Lunch, Dinner).
+          Task: Create a 7-day Kenyan meal plan. Use standard Kenyan meals (Ugali, Skuma, Rice, Beans, Chapati).
         `;
         schema = weeklyPlanSchema;
         break;
@@ -200,9 +270,8 @@ export const runAIAction = async (
       case 'shopping_list':
         prompt = `
           ACTION: shopping_list
-          Current Inventory:
-          ${inventoryStr}
-          Task: What essentials are missing for a standard Kenyan week?
+          Inventory: ${inventoryStr}
+          Task: Essentials missing for a Kenyan week?
         `;
         schema = shoppingListSchema;
         break;
@@ -210,88 +279,36 @@ export const runAIAction = async (
       case 'analyze_inventory':
         prompt = `
           ACTION: analyze_inventory
-          Inventory:
-          ${inventoryStr}
-          Task: Suggest cheap meals I can make NOW, how to extend these items, and what 3 cheap things I should add.
+          Inventory: ${inventoryStr}
+          Task: Cheap meal ideas from this?
         `;
         schema = analysisSchema;
         break;
         
       case 'get_analytics':
-        prompt = `
-          ACTION: get_analytics
-          Budget: ${payload.preferences.budget}
-          Task: Generate simulated spending data and market alerts for Nairobi.
-        `;
+        prompt = `ACTION: get_analytics`;
         schema = analyticsSchema;
         break;
-
-      case 'generate_recipe':
-        prompt = `
-          ACTION: generate_recipe
-          STRICT BUDGET RULE: Recipe cost MUST be <= KES ${payload.context.budget}.
-          User Budget: KES ${payload.context.budget}
-          Available Time: ${payload.context.time} minutes
-          User has these ingredients: ${payload.context.ingredients}
-          Task: Generate a simple, single Kenyan recipe that fits these constraints. ID must be unique string.
-        `;
-        schema = recipeResponseSchema;
-        break;
     }
     
-    const response = await ai.models.generateContent({
-      model: modelId,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: schema,
-        systemInstruction: "You are MealMind Kenya. Output STRICT JSON. Respect Budgets STRICTLY.",
-        maxOutputTokens: 8000, 
-      },
-    });
-
-    const text = response.text;
-    if (!text) throw new Error("No response from AI");
-    
-    const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    const parsed = JSON.parse(cleanText);
-
-    // --- CRITICAL VALIDATION LAYER ---
-    // If AI hallucinates a price that is too high, reject it and fallback to Guaranteed Engine.
-    
-    if (action === 'suggest_meal') {
-      const budgetLimit = payload.preferences.budget;
-      // Allow 5% margin of error for AI
-      if (parsed.total_meal_cost > budgetLimit * 1.05) { 
-        console.warn(`AI Violation: Suggestion (KES ${parsed.total_meal_cost}) exceeds budget (KES ${budgetLimit}). Fallback triggered.`);
-        throw new Error("AI Budget Violation");
-      }
+    if (prompt) {
+       const response = await ai.models.generateContent({
+        model: modelId,
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: schema,
+        },
+      });
+      const text = response.text;
+      if (!text) throw new Error("No response");
+      return JSON.parse(text);
     }
-    
-    if (action === 'generate_recipe') {
-      const budgetLimit = payload.context.budget;
-      if (parsed.estimated_cost_ksh > budgetLimit * 1.05) {
-        console.warn(`AI Violation: Recipe (KES ${parsed.estimated_cost_ksh}) exceeds budget (KES ${budgetLimit}). Fallback triggered.`);
-        throw new Error("AI Budget Violation");
-      }
-    }
-
-    if (action === 'weekly_plan') {
-       if (parsed.total_cost > payload.preferences.weeklyBudget * 1.1) {
-          console.warn("AI Violation: Weekly plan exceeds budget. Fallback triggered.");
-          throw new Error("AI Budget Violation");
-       }
-    }
-
-    return parsed;
 
   } catch (error) {
-    console.warn(`[MealMind Reliability] Layer 1 (Gemini) Failed or Budget Violated for action: ${action}. Reason:`, error);
+    console.warn(`[MealMind] Fallback Triggered for ${action}`, error);
     
-    // GUARANTEED FALLBACK ROUTING
-    // This ensures that even if AI fails, we return a valid, budget-conscious result from our expanded database.
-    
-    await new Promise(resolve => setTimeout(resolve, 500)); // Small artificial delay for UX smoothness
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     switch (action) {
       case 'suggest_meal':
@@ -300,26 +317,16 @@ export const runAIAction = async (
           payload.context?.mealType || MealType.LUNCH, 
           payload.inventory || []
         );
-      
+      case 'generate_recipe':
+        return generateFallbackRecipe(payload.context.budget, payload.context.time, []);
       case 'weekly_plan':
         return generateFallbackWeeklyPlan(payload.preferences);
-
       case 'shopping_list':
         return generateFallbackShoppingList(payload.inventory || []);
-
       case 'get_analytics':
         return generateFallbackAnalytics(payload.preferences);
-
       case 'analyze_inventory':
         return generateFallbackInventoryAnalysis();
-      
-      case 'generate_recipe':
-        return generateFallbackRecipe(
-          payload.context.budget,
-          payload.context.time,
-          (payload.context.ingredients || "").split(',').map((i: string) => i.trim())
-        );
-
       default:
         throw new Error("Unknown action");
     }

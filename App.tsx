@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   FoodItem, 
@@ -210,7 +209,7 @@ const App: React.FC = () => {
                               <Sparkles size={40} className="text-emerald-500" />
                           </div>
                           <h2 className="text-2xl font-bold text-slate-800">What's cooking?</h2>
-                          <p className="text-slate-500 max-w-xs mx-auto">Get a personalized meal suggestion based on your budget and inventory.</p>
+                          <p className="text-slate-500 max-w-xs mx-auto">Get a guaranteed meal suggestion from our Verified Database.</p>
                           
                           <div className="flex justify-center gap-2 flex-wrap">
                             {Object.values(MealType).map((type) => (
@@ -228,7 +227,7 @@ const App: React.FC = () => {
                             onClick={handleSuggestMeal}
                             className="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-xl shadow-emerald-200 hover:bg-emerald-700 hover:-translate-y-1 transition-all flex items-center justify-center gap-2"
                           >
-                              <Sparkles size={20} /> Suggest a Meal
+                              <Sparkles size={20} /> Get Meal Suggestions
                           </button>
                       </div>
                   ) : (
