@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   FoodItem, 
@@ -26,6 +25,7 @@ import { EditBudgetModal } from './components/EditBudgetModal';
 import { RecipesView } from './components/RecipesView'; 
 import { SpinWheel } from './components/SpinWheel';
 import { CoupleMode } from './components/CoupleMode';
+import { LoadingScreen } from './components/LoadingScreen';
 import { runAIAction } from './services/geminiService';
 import { OFFLINE_RECIPES } from './services/fallback/offlineRecipes';
 import { selectMealsFromDatabase } from './services/fallback/fallbackEngine';
@@ -245,10 +245,7 @@ const App: React.FC = () => {
       {/* Main Content */}
       <main className="relative z-10 flex-1 max-w-3xl mx-auto w-full px-4 pt-20 pb-32">
         {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
-                <Loader2 size={40} className="text-emerald-500 animate-spin mb-4" />
-                <p className="text-slate-500 font-medium animate-pulse">Consulting Verified Database...</p>
-           </div>
+            <LoadingScreen mood={preferences.mood} />
         ) : (
           <>
             {currentView === 'meal' && (
