@@ -26,20 +26,31 @@ export enum MealType {
   LUNCH = 'Lunch',
   DINNER = 'Dinner',
   SNACK = 'Snack',
+  DRINK = 'Drink',
   AUTO = 'Surprise Me (Auto)'
 }
 
 export type DietType = 'regular' | 'healthy' | 'energy' | 'light' | 'vegetarian';
+export type RegionType = 'All' | 'Coastal' | 'Western' | 'Central' | 'Rift Valley' | 'Nyanza' | 'Nairobi';
+export type MoodType = 'Neutral' | 'Stressed' | 'Happy' | 'Tired' | 'Broke' | 'Healthy';
 
 export interface UserPreferences {
   budget: number;
   mealsPerDay: number;
   dietType: DietType;
   weeklyBudget: number;
-  strictMode?: boolean; // New preference
+  strictMode?: boolean;
+  region?: RegionType;
+  mood?: MoodType;
 }
 
 // --- RECIPE SYSTEM TYPES ---
+export interface Ingredient {
+  item: string;
+  price_range_ksh: string; // e.g., "20-50"
+  estimated_cost: number;
+}
+
 export interface RecipeStep {
   step: number;
   instruction: string;
@@ -48,13 +59,29 @@ export interface RecipeStep {
 export interface Recipe {
   id: string;
   title: string;
-  ingredients: string[];
+  ingredients: string[]; // Legacy support
+  detailed_ingredients?: Ingredient[]; // New detailed format
   steps: RecipeStep[];
   estimated_cost_ksh: number;
   cook_time_minutes: number;
   category: string;
+  region: RegionType;
+  moods: MoodType[];
+  isQuickMeal: boolean;
+  image_url?: string;
 }
 // --- END RECIPE SYSTEM TYPES ---
+
+// Gamification
+export interface Challenge {
+  id: string;
+  title: string;
+  description: string;
+  target_days: number;
+  current_day: number;
+  completed: boolean;
+  reward_badge: string;
+}
 
 // User & Auth
 export interface UserProfile {
@@ -62,7 +89,10 @@ export interface UserProfile {
   email: string;
   preferences: UserPreferences;
   savedPlans: WeeklyPlanResponse[];
-  savedRecipes: Recipe[]; 
+  savedRecipes: Recipe[];
+  challenges: Challenge[];
+  partnerName?: string;
+  isCoupleMode?: boolean;
 }
 
 export interface AuthState {

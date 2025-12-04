@@ -1,3 +1,4 @@
+
 import { 
   UserPreferences, 
   FoodItem, 
@@ -7,143 +8,131 @@ import {
   InventoryAnalysisResponse,
   AnalyticsData,
   MealType,
-  Recipe
+  Recipe,
+  RegionType,
+  MoodType,
+  Challenge
 } from "../../types";
 import { SHOPPING_DEFAULTS, ANALYTICS_DEFAULTS } from "./fallbackData";
 import { OFFLINE_RECIPES } from "./offlineRecipes";
 
-// LAYER 4: GUARANTEED RESULTS ENGINE & DATABASE SELECTOR
+// --- SMART MARKET PRICE ENGINE ---
+// Simulates daily market fluctuations in Kenya
+const getSmartPrice = (basePrice: number): number => {
+  const day = new Date().getDay();
+  // Markets are cheaper on market days (often Tue/Fri in many towns)
+  const isMarketDay = day === 2 || day === 5; 
+  const fluctuation = isMarketDay ? 0.9 : 1.05; // 10% cheaper or 5% markup
+  
+  // Random daily variance +/- 5 KES
+  const variance = Math.floor(Math.random() * 11) - 5;
+  
+  return Math.ceil((basePrice * fluctuation) + variance);
+};
 
-interface ValidMealResult {
-  recipe: Recipe;
-  adjusted: boolean;
-  message?: string;
-}
+// --- DATABASE SELECTOR ---
 
-/**
- * CORE LOGIC: Selects meals directly from the offline database.
- * Filters by budget, meal type, and basic diet heuristics.
- * NEVER invents data.
- */
 export const selectMealsFromDatabase = (
   budget: number, 
   mealType?: string, 
-  diet?: string
+  diet?: string,
+  region?: RegionType,
+  mood?: MoodType,
+  strictMode: boolean = true
 ): Recipe[] => {
-  // 1. Filter by Budget (Strict)
-  let candidates = OFFLINE_RECIPES.filter(r => r.estimated_cost_ksh <= budget);
+  
+  let candidates = OFFLINE_RECIPES.map(r => ({
+    ...r,
+    estimated_cost_ksh: getSmartPrice(r.estimated_cost_ksh) // Apply smart pricing
+  }));
 
-  // 2. Filter by Meal Type (Loose matching)
-  if (mealType && mealType !== MealType.AUTO) {
-    const typeLower = mealType.toLowerCase();
-    candidates = candidates.filter(r => {
-      const cat = r.category.toLowerCase();
-      const title = r.title.toLowerCase();
-      
-      if (typeLower === 'breakfast') return cat.includes('breakfast') || title.includes('tea') || title.includes('mandazi') || title.includes('toast') || title.includes('egg');
-      if (typeLower === 'snack') return cat.includes('snack') || cat.includes('bite') || cat.includes('street');
-      // Lunch/Dinner are often interchangeable in Kenya
-      if (typeLower === 'lunch' || typeLower === 'dinner') {
-        return !cat.includes('breakfast') && !cat.includes('snack');
-      }
-      return true;
-    });
+  // 1. Budget Filter
+  if (strictMode) {
+    candidates = candidates.filter(r => r.estimated_cost_ksh <= budget);
+  } else {
+    // Soft limit for auto-adjust
+    candidates = candidates.filter(r => r.estimated_cost_ksh <= budget + 50);
   }
 
-  // 3. Filter by Diet (Heuristics since tags might be missing in raw JSON)
+  // 2. Meal Type
+  if (mealType && mealType !== MealType.AUTO) {
+    candidates = candidates.filter(r => 
+      r.category.toLowerCase().includes(mealType.toLowerCase()) || 
+      (mealType === 'Lunch' && r.category === 'Dinner') || // Lunch/Dinner swap
+      (mealType === 'Dinner' && r.category === 'Lunch')
+    );
+  }
+
+  // 3. Region Filter
+  if (region && region !== 'All') {
+    candidates = candidates.filter(r => r.region === region || r.region === 'All');
+  }
+
+  // 4. Mood Filter
+  if (mood && mood !== 'Neutral') {
+    candidates = candidates.filter(r => r.moods.includes(mood));
+  }
+
+  // 5. Diet Filter
   if (diet && diet !== 'regular') {
-    const dietLower = diet.toLowerCase();
-    candidates = candidates.filter(r => {
-      const title = r.title.toLowerCase();
-      const ings = r.ingredients.join(' ').toLowerCase();
-      const isMeat = ings.includes('beef') || ings.includes('chicken') || ings.includes('meat') || ings.includes('fish') || ings.includes('omena') || ings.includes('smokie') || ings.includes('sausage') || ings.includes('matumbo');
-      
-      if (dietLower === 'vegetarian') return !isMeat;
-      // Add more heuristics if needed
-      return true;
-    });
+     const dietLower = diet.toLowerCase();
+     candidates = candidates.filter(r => {
+        const ings = r.ingredients.join(' ').toLowerCase();
+        const isMeat = ings.includes('beef') || ings.includes('chicken') || ings.includes('meat') || ings.includes('fish') || ings.includes('omena') || ings.includes('smokie') || ings.includes('sausage') || ings.includes('matumbo') || ings.includes('mutura');
+        if (dietLower === 'vegetarian') return !isMeat;
+        if (dietLower === 'healthy') return r.moods.includes('Healthy');
+        return true;
+     });
   }
 
   return candidates;
 };
 
-/**
- * Fallback / Guaranteed Picker
- * Used when AI fails or when we just need a quick valid result.
- */
-export const getValidMeals = (budget: number, strict: boolean = false): ValidMealResult => {
-  // Try strictly within budget
-  let validRecipes = OFFLINE_RECIPES.filter(r => r.estimated_cost_ksh <= budget);
+// --- GUARANTEED FALLBACK ---
 
-  if (validRecipes.length > 0) {
-    return {
-      recipe: validRecipes[Math.floor(Math.random() * validRecipes.length)],
-      adjusted: false
-    };
-  }
-
-  // Expansion: Budget + 20 KES buffer
-  if (!strict) {
-     validRecipes = OFFLINE_RECIPES.filter(r => r.estimated_cost_ksh <= budget + 20);
-     if (validRecipes.length > 0) {
-        return {
-          recipe: validRecipes[Math.floor(Math.random() * validRecipes.length)],
-          adjusted: true,
-          message: `Budget slightly adjusted (+20 KES) to find a meal.`
-        };
-     }
-  }
-
-  // Ultimate Fallback: Cheapest meal in DB
-  const sortedRecipes = [...OFFLINE_RECIPES].sort((a, b) => a.estimated_cost_ksh - b.estimated_cost_ksh);
-  const cheapest = sortedRecipes[0];
-
-  return {
-    recipe: cheapest,
-    adjusted: true,
-    message: `Budget too low. Showing cheapest option (KES ${cheapest.estimated_cost_ksh}).`
-  };
-};
-
-// 1. GUARANTEED MEAL SUGGESTION FALLBACK
 export const generateFallbackMeal = (
   prefs: UserPreferences, 
   mealType: string, 
   inventory: FoodItem[]
 ): MealResponse => {
   
-  // Use the selector logic first
-  const candidates = selectMealsFromDatabase(prefs.budget, mealType, prefs.dietType);
+  const candidates = selectMealsFromDatabase(
+    prefs.budget, 
+    mealType, 
+    prefs.dietType, 
+    prefs.region, 
+    prefs.mood, 
+    prefs.strictMode
+  );
   
   let selectedMeal: Recipe;
   let adjusted = false;
-  let message = "Local Recommendation";
+  let message = "Perfect Match";
 
   if (candidates.length > 0) {
-    // Pick random from valid candidates
     selectedMeal = candidates[Math.floor(Math.random() * candidates.length)];
   } else {
-    // Fallback to Guaranteed Engine if specific filtering found nothing
-    const result = getValidMeals(prefs.budget, prefs.strictMode);
-    selectedMeal = result.recipe;
-    adjusted = result.adjusted;
-    message = result.message || "Best available option";
+    // If no match found (e.g. very low budget), find CHEAPEST valid meal
+    const allMeals = OFFLINE_RECIPES.map(r => ({...r, estimated_cost_ksh: getSmartPrice(r.estimated_cost_ksh)}));
+    const sorted = allMeals.sort((a,b) => a.estimated_cost_ksh - b.estimated_cost_ksh);
+    selectedMeal = sorted[0];
+    adjusted = true;
+    message = "Budget too low for preferences. Showing cheapest option.";
   }
 
-  // Enhance reason with inventory match
   const inventoryNames = (inventory || []).map(i => i.name.toLowerCase());
   const overlappingIngredients = selectedMeal.ingredients.filter(ing => 
     inventoryNames.some(inv => inv.includes(ing.toLowerCase()))
   );
 
   let reason = overlappingIngredients.length > 0
-    ? `Matches your ${overlappingIngredients.join(', ')}.`
-    : `Fits your KES ${prefs.budget} budget.`;
+    ? `Uses your ${overlappingIngredients[0]}.`
+    : `Fit for ${prefs.mood || 'you'}.`;
 
-  if (adjusted) reason += " (Budget adjusted)";
+  if (adjusted) reason = "Best low-cost option available.";
 
   return {
-    meal_type: mealType === MealType.AUTO ? selectedMeal.category : mealType,
+    meal_type: selectedMeal.category,
     suggestions: [{
       food: selectedMeal.title,
       estimated_cost: selectedMeal.estimated_cost_ksh,
@@ -156,17 +145,49 @@ export const generateFallbackMeal = (
   };
 };
 
-// 2. RECIPE FALLBACK
+// --- CHALLENGES SYSTEM ---
+
+export const getWeeklyChallenges = (): Challenge[] => [
+  {
+    id: "ch_01",
+    title: "The 200 Bob Survivor",
+    description: "Eat all meals for under KES 200 per day for 3 days.",
+    target_days: 3,
+    current_day: 0,
+    completed: false,
+    reward_badge: "🛡️ Survivor"
+  },
+  {
+    id: "ch_02",
+    title: "Greens Week",
+    description: "Include Sukuma, Managu, or Spinach in 5 meals.",
+    target_days: 5,
+    current_day: 2,
+    completed: false,
+    reward_badge: "🥬 Green Giant"
+  },
+  {
+    id: "ch_03",
+    title: "Zero Waste Hero",
+    description: "Clear your inventory list completely.",
+    target_days: 1,
+    current_day: 0,
+    completed: false,
+    reward_badge: "♻️ Eco Warrior"
+  }
+];
+
+// --- STANDARD GENERATORS ---
+
 export const generateFallbackRecipe = (
   budget: number,
   time: number,
   ingredients: string[]
 ): Recipe => {
-  const result = getValidMeals(budget, false);
-  return result.recipe;
+  const result = selectMealsFromDatabase(budget, undefined, undefined, undefined, undefined, false);
+  return result[0] || OFFLINE_RECIPES[0];
 };
 
-// 3. WEEKLY PLAN FALLBACK
 export const generateFallbackWeeklyPlan = (prefs: UserPreferences): WeeklyPlanResponse => {
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
   const weeklyPlan = [];
@@ -179,28 +200,14 @@ export const generateFallbackWeeklyPlan = (prefs: UserPreferences): WeeklyPlanRe
     const meals = [];
 
     // Breakfast
-    const bfBudget = Math.floor(dailyBudget * 0.25);
-    const bfRecipes = selectMealsFromDatabase(Math.max(30, bfBudget), 'Breakfast', prefs.dietType);
-    const bf = bfRecipes.length > 0 ? bfRecipes[Math.floor(Math.random() * bfRecipes.length)] : getValidMeals(50).recipe;
-    
+    const bf = selectMealsFromDatabase(100, 'Breakfast', prefs.dietType)[0] || OFFLINE_RECIPES[0];
     meals.push({ meal_type: "Breakfast", name: bf.title, cost: bf.estimated_cost_ksh });
     dayCost += bf.estimated_cost_ksh;
 
-    // Lunch
-    const lunchBudget = Math.floor((dailyBudget - dayCost) * 0.5);
-    const lunchRecipes = selectMealsFromDatabase(Math.max(50, lunchBudget), 'Lunch', prefs.dietType);
-    const lunch = lunchRecipes.length > 0 ? lunchRecipes[Math.floor(Math.random() * lunchRecipes.length)] : getValidMeals(80).recipe;
-
-    meals.push({ meal_type: "Lunch", name: lunch.title, cost: lunch.estimated_cost_ksh });
-    dayCost += lunch.estimated_cost_ksh;
-
     // Dinner
-    const dinnerBudget = Math.max(50, dailyBudget - dayCost);
-    const dinnerRecipes = selectMealsFromDatabase(dinnerBudget, 'Dinner', prefs.dietType);
-    const dinner = dinnerRecipes.length > 0 ? dinnerRecipes[Math.floor(Math.random() * dinnerRecipes.length)] : getValidMeals(100).recipe;
-
-    meals.push({ meal_type: "Dinner", name: dinner.title, cost: dinner.estimated_cost_ksh });
-    dayCost += dinner.estimated_cost_ksh;
+    const dn = selectMealsFromDatabase(dailyBudget - 100, 'Dinner', prefs.dietType)[0] || OFFLINE_RECIPES[5];
+    meals.push({ meal_type: "Dinner", name: dn.title, cost: dn.estimated_cost_ksh });
+    dayCost += dn.estimated_cost_ksh;
 
     weeklyPlan.push({
       day,
@@ -218,14 +225,9 @@ export const generateFallbackWeeklyPlan = (prefs: UserPreferences): WeeklyPlanRe
 };
 
 export const generateFallbackShoppingList = (inventory: FoodItem[]): ShoppingListResponse => {
-  const inventoryNames = (inventory || []).map(i => i.name.toLowerCase());
-  const needed = SHOPPING_DEFAULTS.filter(def => 
-    !inventoryNames.some(inv => inv.includes(def.item.toLowerCase()))
-  );
-
   return {
-    shopping_list: needed.length > 0 ? needed : SHOPPING_DEFAULTS.slice(0, 3),
-    estimated_total_cost: needed.length > 0 ? needed.length * 150 : 450
+    shopping_list: SHOPPING_DEFAULTS.slice(0, 5),
+    estimated_total_cost: 650
   };
 };
 
@@ -233,15 +235,15 @@ export const generateFallbackAnalytics = (prefs: UserPreferences): AnalyticsData
   return {
     weekly_spending_trend: ANALYTICS_DEFAULTS.trends,
     category_breakdown: ANALYTICS_DEFAULTS.categories,
-    projected_savings: Math.floor(prefs.weeklyBudget * 0.15),
+    projected_savings: Math.floor(prefs.weeklyBudget * 0.12),
     price_alerts: ANALYTICS_DEFAULTS.alerts
   };
 };
 
 export const generateFallbackInventoryAnalysis = (): InventoryAnalysisResponse => {
   return {
-    cheap_meal_options: ["Ugali Skuma", "Rice & Beans", "Githeri"],
-    ways_to_extend_inventory: ["Add water to stews to increase volume", "Use leftovers for breakfast", "Buy staples in bulk to save"],
-    recommended_additions: ["Avocado", "Bananas", "Curry Powder (Royco)"]
+    cheap_meal_options: ["Ugali Skuma", "Rice & Beans"],
+    ways_to_extend_inventory: ["Add water to stews", "Buy in bulk"],
+    recommended_additions: ["Avocado", "Royco"]
   };
 };

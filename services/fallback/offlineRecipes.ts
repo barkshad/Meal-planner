@@ -1,425 +1,451 @@
-
 import { Recipe } from "../../types";
 
 export const OFFLINE_RECIPES: Recipe[] = [
-  // --- UNDER 30 KSH (SURVIVAL / SNACK) ---
+  // --- BREAKFAST ---
   {
-    id: "surv_001",
-    title: "Strong Tea (Sturungi) & Mandazi",
-    ingredients: ["Water", "Tea Leaves", "Sugar", "Mandazi"],
-    steps: [{ step: 1, instruction: "Boil water with tea leaves, add sugar." }, { step: 2, instruction: "Serve hot with a mandazi." }],
-    estimated_cost_ksh: 25,
-    cook_time_minutes: 10,
-    category: "Breakfast"
+    id: "bf_001",
+    title: "Swahili Mahamri & Mbaazi",
+    category: "Breakfast",
+    region: "Coastal",
+    moods: ["Happy", "Healthy"],
+    isQuickMeal: false,
+    estimated_cost_ksh: 80,
+    cook_time_minutes: 60,
+    ingredients: ["Flour", "Coconut Milk", "Cardamom", "Pigeon Peas", "Coconut Cream"],
+    detailed_ingredients: [
+      { item: "Wheat Flour", price_range_ksh: "20", estimated_cost: 20 },
+      { item: "Coconut Milk", price_range_ksh: "30", estimated_cost: 30 },
+      { item: "Pigeon Peas (Mbaazi)", price_range_ksh: "30", estimated_cost: 30 }
+    ],
+    steps: [
+      { step: 1, instruction: "Mix flour, sugar, cardamom and coconut milk to make dough." },
+      { step: 2, instruction: "Let dough rise, then fry into golden brown Mahamri." },
+      { step: 3, instruction: "Boil mbaazi in coconut milk until thick." }
+    ]
   },
   {
-    id: "surv_002",
-    title: "Uji wa Wimbi (Millet Porridge)",
-    ingredients: ["Millet Flour", "Water", "Sugar"],
-    steps: [{ step: 1, instruction: "Mix flour with cold water." }, { step: 2, instruction: "Boil water and stir in paste." }, { step: 3, instruction: "Cook 10 mins, sweeten." }],
-    estimated_cost_ksh: 20,
-    cook_time_minutes: 15,
-    category: "Breakfast"
-  },
-  {
-    id: "surv_003",
-    title: "Boiled Maize (Mahindi Chemsha)",
-    ingredients: ["Green Maize Cob", "Salt", "Water"],
-    steps: [{ step: 1, instruction: "Boil maize cob in salted water until soft." }],
-    estimated_cost_ksh: 30,
-    cook_time_minutes: 45,
-    category: "Snack"
-  },
-  {
-    id: "surv_004",
-    title: "Roasted Sweet Potato",
-    ingredients: ["Sweet Potato"],
-    steps: [{ step: 1, instruction: "Roast potato over charcoal or oven until tender." }],
-    estimated_cost_ksh: 25,
-    cook_time_minutes: 20,
-    category: "Snack"
-  },
-  {
-    id: "surv_005",
-    title: "Toast & Margarine",
-    ingredients: ["Bread Slices (3)", "Blueband"],
-    steps: [{ step: 1, instruction: "Toast bread." }, { step: 2, instruction: "Spread margarine generousy." }],
-    estimated_cost_ksh: 20,
-    cook_time_minutes: 5,
-    category: "Breakfast"
-  },
-  {
-    id: "surv_006",
-    title: "Banana & Groundnuts",
-    ingredients: ["Ripe Banana", "Roasted Groundnuts"],
-    steps: [{ step: 1, instruction: "Peel banana and serve with nuts." }],
-    estimated_cost_ksh: 30,
-    cook_time_minutes: 0,
-    category: "Snack"
-  },
-
-  // --- UNDER 50 KSH (ULTRA BUDGET) ---
-  {
-    id: "bud_001",
-    title: "Ugali & Sukuma (Basic)",
-    ingredients: ["Maize Flour", "Sukuma Wiki", "Salt", "Onion"],
-    steps: [{ step: 1, instruction: "Make stiff Ugali." }, { step: 2, instruction: "Fry sukuma with onion and salt." }],
-    estimated_cost_ksh: 45,
-    cook_time_minutes: 20,
-    category: "Ugali Dishes"
-  },
-  {
-    id: "bud_002",
-    title: "Githeri (Plain)",
-    ingredients: ["Boiled Maize & Beans", "Salt"],
-    steps: [{ step: 1, instruction: "Warm boiled githeri with salt." }],
-    estimated_cost_ksh: 40,
-    cook_time_minutes: 5,
-    category: "Budget Meals"
-  },
-  {
-    id: "bud_003",
-    title: "Fried Egg & Bread",
-    ingredients: ["Egg", "Bread (2 slices)", "Oil", "Salt"],
-    steps: [{ step: 1, instruction: "Fry egg." }, { step: 2, instruction: "Sandwich between bread." }],
-    estimated_cost_ksh: 50,
-    cook_time_minutes: 10,
-    category: "Breakfast"
-  },
-  {
-    id: "bud_004",
-    title: "Avocado Toast (Kenyan Style)",
-    ingredients: ["Avocado", "Bread", "Salt"],
-    steps: [{ step: 1, instruction: "Mash avocado onto bread." }, { step: 2, instruction: "Salt heavily." }],
-    estimated_cost_ksh: 50,
-    cook_time_minutes: 2,
-    category: "Lunch"
-  },
-  {
-    id: "bud_005",
-    title: "Kachumbari & Smokies",
-    ingredients: ["Smokies (2)", "Tomato", "Onion"],
-    steps: [{ step: 1, instruction: "Chop veggies." }, { step: 2, instruction: "Eat with smokies." }],
-    estimated_cost_ksh: 50,
-    cook_time_minutes: 5,
-    category: "Snack"
-  },
-  {
-    id: "bud_006",
-    title: "Omena Fry (Small Portion)",
-    ingredients: ["Omena", "Onion", "Tomato", "Oil"],
-    steps: [{ step: 1, instruction: "Wash omena." }, { step: 2, instruction: "Fry with onion/tomato." }],
-    estimated_cost_ksh: 50,
-    cook_time_minutes: 20,
-    category: "Dinner"
-  },
-  {
-    id: "bud_007",
-    title: "Chapati & Tea",
-    ingredients: ["Wheat Flour", "Oil", "Tea Leaves", "Milk"],
-    steps: [{ step: 1, instruction: "Make 2 chapatis." }, { step: 2, instruction: "Serve with tea." }],
-    estimated_cost_ksh: 50,
+    id: "bf_002",
+    title: "Kikuyu Arrowroots (Nduma) & Tea",
+    category: "Breakfast",
+    region: "Central",
+    moods: ["Healthy", "Tired"],
+    isQuickMeal: true,
+    estimated_cost_ksh: 120,
     cook_time_minutes: 40,
-    category: "Breakfast"
+    ingredients: ["Nduma", "Water", "Milk", "Tea Leaves"],
+    detailed_ingredients: [
+      { item: "Arrowroots", price_range_ksh: "80", estimated_cost: 80 },
+      { item: "Milk", price_range_ksh: "30", estimated_cost: 30 },
+      { item: "Tea Leaves", price_range_ksh: "10", estimated_cost: 10 }
+    ],
+    steps: [
+      { step: 1, instruction: "Peel and boil Nduma until soft." },
+      { step: 2, instruction: "Prepare Kenyan mixed tea." }
+    ]
   },
   {
-    id: "bud_008",
-    title: "Boiled Cassava (Muhogo)",
-    ingredients: ["Cassava", "Salt", "Chili"],
-    steps: [{ step: 1, instruction: "Boil cassava until soft." }, { step: 2, instruction: "Serve with chili lemon salt." }],
-    estimated_cost_ksh: 40,
+    id: "bf_003",
+    title: "Street Smokie Pasua & Kachumbari",
+    category: "Snack",
+    region: "Nairobi",
+    moods: ["Broke", "Tired"],
+    isQuickMeal: true,
+    estimated_cost_ksh: 35,
+    cook_time_minutes: 2,
+    ingredients: ["Smokie", "Tomato", "Onion", "Chili"],
+    detailed_ingredients: [
+      { item: "Smokie", price_range_ksh: "25", estimated_cost: 25 },
+      { item: "Kachumbari", price_range_ksh: "10", estimated_cost: 10 }
+    ],
+    steps: [
+      { step: 1, instruction: "Split smokie." },
+      { step: 2, instruction: "Fill with fresh kachumbari." }
+    ]
+  },
+  {
+    id: "bf_004",
+    title: "Wimbi Porridge (Uji)",
+    category: "Drink",
+    region: "Western",
+    moods: ["Healthy", "Stressed"],
+    isQuickMeal: true,
+    estimated_cost_ksh: 30,
+    cook_time_minutes: 15,
+    ingredients: ["Millet Flour", "Water", "Sugar", "Lemon"],
+    detailed_ingredients: [
+      { item: "Millet Flour", price_range_ksh: "20", estimated_cost: 20 },
+      { item: "Lemon", price_range_ksh: "10", estimated_cost: 10 }
+    ],
+    steps: [
+      { step: 1, instruction: "Mix flour with cold water to paste." },
+      { step: 2, instruction: "Pour into boiling water, stir continuously." },
+      { step: 3, instruction: "Add lemon and sugar." }
+    ]
+  },
+  {
+    id: "bf_005",
+    title: "Sweet Potato & Black Tea",
+    category: "Breakfast",
+    region: "Western",
+    moods: ["Broke", "Healthy"],
+    isQuickMeal: false,
+    estimated_cost_ksh: 50,
     cook_time_minutes: 30,
-    category: "Lunch"
+    ingredients: ["Sweet Potato", "Water", "Tea Leaves"],
+    detailed_ingredients: [
+      { item: "Sweet Potato", price_range_ksh: "40", estimated_cost: 40 },
+      { item: "Tea Leaves", price_range_ksh: "10", estimated_cost: 10 }
+    ],
+    steps: [
+      { step: 1, instruction: "Boil or roast sweet potatoes." },
+      { step: 2, instruction: "Serve with strong black tea (strungi)." }
+    ]
   },
 
-  // --- UNDER 80 KSH (ECONOMY) ---
+  // --- LUNCH ---
   {
-    id: "econ_001",
-    title: "Ugali & Omena",
-    ingredients: ["Maize Flour", "Omena", "Tomato", "Oil"],
-    steps: [{ step: 1, instruction: "Cook ugali." }, { step: 2, instruction: "Fry omena with tomato base." }],
-    estimated_cost_ksh: 75,
-    cook_time_minutes: 30,
-    category: "Ugali Dishes"
-  },
-  {
-    id: "econ_002",
-    title: "Chapati & Beans",
-    ingredients: ["Chapati", "Beans Stew"],
-    steps: [{ step: 1, instruction: "Serve chapati with bean stew." }],
+    id: "ln_001",
+    title: "Githeri Special (Avocado)",
+    category: "Lunch",
+    region: "Central",
+    moods: ["Broke", "Healthy"],
+    isQuickMeal: true,
     estimated_cost_ksh: 70,
     cook_time_minutes: 10,
-    category: "Chapati Dishes"
+    ingredients: ["Boiled Maize & Beans", "Avocado", "Salt"],
+    detailed_ingredients: [
+      { item: "Githeri (Boiled)", price_range_ksh: "40", estimated_cost: 40 },
+      { item: "Avocado", price_range_ksh: "30", estimated_cost: 30 }
+    ],
+    steps: [
+      { step: 1, instruction: "Buy or warm boiled githeri." },
+      { step: 2, instruction: "Dice avocado and mix in with salt." }
+    ]
   },
   {
-    id: "econ_003",
-    title: "Rice & Cabbage",
-    ingredients: ["Rice", "Cabbage", "Onion", "Carrot"],
-    steps: [{ step: 1, instruction: "Boil rice." }, { step: 2, instruction: "Steam cabbage with veggies." }],
-    estimated_cost_ksh: 80,
-    cook_time_minutes: 25,
-    category: "Rice Dishes"
-  },
-  {
-    id: "econ_004",
-    title: "Mayai Curry & Ugali",
-    ingredients: ["Eggs (2)", "Tomato", "Onion", "Maize Flour"],
-    steps: [{ step: 1, instruction: "Make tomato gravy." }, { step: 2, instruction: "Add boiled eggs." }, { step: 3, instruction: "Serve with Ugali." }],
-    estimated_cost_ksh: 80,
-    cook_time_minutes: 25,
-    category: "Ugali Dishes"
-  },
-  {
-    id: "econ_005",
-    title: "Soya Chunks & Rice",
-    ingredients: ["Soya Chunks", "Rice", "Tomato", "Royco"],
-    steps: [{ step: 1, instruction: "Soak soya." }, { step: 2, instruction: "Fry with tomato/royco." }, { step: 3, instruction: "Eat with rice." }],
-    estimated_cost_ksh: 75,
-    cook_time_minutes: 30,
-    category: "Rice Dishes"
-  },
-  {
-    id: "econ_006",
-    title: "Ndengu & Rice (Small)",
-    ingredients: ["Green Grams", "Rice", "Onion"],
-    steps: [{ step: 1, instruction: "Boil rice." }, { step: 2, instruction: "Fry ndengu." }],
-    estimated_cost_ksh: 80,
-    cook_time_minutes: 35,
-    category: "Rice Dishes"
-  },
-  {
-    id: "econ_007",
-    title: "Ugali & Managu",
-    ingredients: ["Maize Flour", "Managu", "Milk/Cream"],
-    steps: [{ step: 1, instruction: "Cook Ugali." }, { step: 2, instruction: "Fried managu with dash of milk." }],
-    estimated_cost_ksh: 80,
-    cook_time_minutes: 30,
-    category: "Ugali Dishes"
-  },
-
-  // --- UNDER 100 KSH (STANDARD) ---
-  {
-    id: "std_001",
-    title: "Ugali, Sukuma & Avocado",
-    ingredients: ["Maize Flour", "Sukuma Wiki", "Avocado", "Tomato"],
-    steps: [{ step: 1, instruction: "Prepare Ugali." }, { step: 2, instruction: "Fry sukuma." }, { step: 3, instruction: "Add avocado side." }],
-    estimated_cost_ksh: 95,
-    cook_time_minutes: 30,
-    category: "Ugali Dishes"
-  },
-  {
-    id: "std_002",
-    title: "Githeri Special",
-    ingredients: ["Maize", "Beans", "Potatoes", "Carrots", "Beef Cube"],
-    steps: [{ step: 1, instruction: "Fry githeri." }, { step: 2, instruction: "Add potatoes/carrots." }, { step: 3, instruction: "Simmer." }],
-    estimated_cost_ksh: 100,
-    cook_time_minutes: 35,
-    category: "Budget Meals"
-  },
-  {
-    id: "std_003",
-    title: "Indomie & Egg",
-    ingredients: ["Indomie (2)", "Egg", "Onion"],
-    steps: [{ step: 1, instruction: "Fry onion." }, { step: 2, instruction: "Cook noodles." }, { step: 3, instruction: "Add egg." }],
-    estimated_cost_ksh: 90,
-    cook_time_minutes: 10,
-    category: "Fast Food"
-  },
-  {
-    id: "std_004",
-    title: "French Toast & Tea",
-    ingredients: ["Bread", "Eggs", "Milk", "Tea Leaves"],
-    steps: [{ step: 1, instruction: "Dip bread in egg mix." }, { step: 2, instruction: "Fry." }, { step: 3, instruction: "Serve with tea." }],
-    estimated_cost_ksh: 95,
-    cook_time_minutes: 15,
-    category: "Breakfast"
-  },
-  {
-    id: "std_005",
-    title: "Smocha (Smokie Chapati)",
-    ingredients: ["Chapati", "Smokie", "Kachumbari"],
-    steps: [{ step: 1, instruction: "Wrap smokie and salsa in chapati." }],
-    estimated_cost_ksh: 90,
-    cook_time_minutes: 5,
-    category: "Street Food"
-  },
-  {
-    id: "std_006",
-    title: "Spaghetti & Egg Curry",
-    ingredients: ["Spaghetti", "Eggs", "Tomato Paste"],
-    steps: [{ step: 1, instruction: "Boil spaghetti." }, { step: 2, instruction: "Make egg curry." }],
-    estimated_cost_ksh: 100,
-    cook_time_minutes: 20,
-    category: "Dinner"
-  },
-
-  // --- UNDER 150 KSH (FILLING) ---
-  {
-    id: "fill_001",
-    title: "Ugali & Matumbo",
-    ingredients: ["Maize Flour", "Matumbo", "Onion", "Dania"],
-    steps: [{ step: 1, instruction: "Boil matumbo tender." }, { step: 2, instruction: "Fry." }, { step: 3, instruction: "Serve with Ugali." }],
-    estimated_cost_ksh: 140,
-    cook_time_minutes: 60,
-    category: "Ugali Dishes"
-  },
-  {
-    id: "fill_002",
-    title: "Chapati & Ndengu",
-    ingredients: ["Wheat Flour", "Green Grams", "Carrots"],
-    steps: [{ step: 1, instruction: "Make chapati." }, { step: 2, instruction: "Fry ndengu." }],
-    estimated_cost_ksh: 130,
-    cook_time_minutes: 60,
-    category: "Chapati Dishes"
-  },
-  {
-    id: "fill_003",
-    title: "Rice & Minced Meat",
-    ingredients: ["Rice", "Minced Meat", "Peas"],
-    steps: [{ step: 1, instruction: "Fry mince with peas." }, { step: 2, instruction: "Serve with rice." }],
-    estimated_cost_ksh: 150,
-    cook_time_minutes: 40,
-    category: "Rice Dishes"
-  },
-  {
-    id: "fill_004",
-    title: "Vegetable Fried Rice",
-    ingredients: ["Rice", "Mixed Veggies", "Egg", "Soy Sauce"],
-    steps: [{ step: 1, instruction: "Stir fry rice with veggies/egg." }],
-    estimated_cost_ksh: 120,
-    cook_time_minutes: 30,
-    category: "Rice Dishes"
-  },
-  {
-    id: "fill_005",
-    title: "Ugali & Mala",
-    ingredients: ["Maize Flour", "Mala (Fermented Milk)"],
-    steps: [{ step: 1, instruction: "Cook stiff Ugali." }, { step: 2, instruction: "Serve with cold Mala." }],
+    id: "ln_002",
+    title: "Ugali & Omena Fry",
+    category: "Lunch",
+    region: "Nyanza",
+    moods: ["Healthy", "Stressed"],
+    isQuickMeal: false,
     estimated_cost_ksh: 110,
-    cook_time_minutes: 20,
-    category: "Traditional"
+    cook_time_minutes: 40,
+    ingredients: ["Maize Flour", "Omena", "Tomato", "Onion", "Milk"],
+    detailed_ingredients: [
+      { item: "Omena", price_range_ksh: "50", estimated_cost: 50 },
+      { item: "Flour", price_range_ksh: "20", estimated_cost: 20 },
+      { item: "Veggies", price_range_ksh: "40", estimated_cost: 40 }
+    ],
+    steps: [
+      { step: 1, instruction: "Sort and wash omena in hot water." },
+      { step: 2, instruction: "Fry onion and tomatoes, add omena." },
+      { step: 3, instruction: "Add a splash of milk and simmer. Serve with Ugali." }
+    ]
   },
   {
-    id: "fill_006",
-    title: "Pancake & Sausage Breakfast",
-    ingredients: ["Flour", "Egg", "Milk", "Sausage"],
-    steps: [{ step: 1, instruction: "Make pancakes." }, { step: 2, instruction: "Fry sausage." }],
+    id: "ln_003",
+    title: "Chips Mwitu & Sausage",
+    category: "Lunch",
+    region: "Nairobi",
+    moods: ["Happy", "Tired"],
+    isQuickMeal: true,
+    estimated_cost_ksh: 100,
+    cook_time_minutes: 5,
+    ingredients: ["Fries", "Sausage", "Tomato Sauce"],
+    detailed_ingredients: [
+      { item: "Chips", price_range_ksh: "70", estimated_cost: 70 },
+      { item: "Sausage", price_range_ksh: "30", estimated_cost: 30 }
+    ],
+    steps: [
+      { step: 1, instruction: "Buy portion of chips." },
+      { step: 2, instruction: "Add sausage and plenty of sauce." }
+    ]
+  },
+  {
+    id: "ln_004",
+    title: "Matoke with Peanut Sauce",
+    category: "Lunch",
+    region: "Western",
+    moods: ["Healthy", "Happy"],
+    isQuickMeal: false,
     estimated_cost_ksh: 140,
-    cook_time_minutes: 25,
-    category: "Breakfast"
-  },
-
-  // --- UNDER 200 KSH (COMFORT) ---
-  {
-    id: "comf_001",
-    title: "Ugali & Beef Stew",
-    ingredients: ["Maize Flour", "Beef", "Tomato", "Royco"],
-    steps: [{ step: 1, instruction: "Boil beef." }, { step: 2, instruction: "Fry into stew." }, { step: 3, instruction: "Eat with Ugali." }],
-    estimated_cost_ksh: 190,
-    cook_time_minutes: 50,
-    category: "Ugali Dishes"
-  },
-  {
-    id: "comf_002",
-    title: "Chips Masala",
-    ingredients: ["Potatoes", "Oil", "Tomato Paste", "Chili"],
-    steps: [{ step: 1, instruction: "Deep fry chips." }, { step: 2, instruction: "Toss in masala sauce." }],
-    estimated_cost_ksh: 180,
-    cook_time_minutes: 40,
-    category: "Fast Food"
-  },
-  {
-    id: "comf_003",
-    title: "Matoke with Groundnuts",
+    cook_time_minutes: 45,
     ingredients: ["Green Bananas", "Peanut Powder", "Tomatoes"],
-    steps: [{ step: 1, instruction: "Boil matoke." }, { step: 2, instruction: "Add peanut sauce." }],
-    estimated_cost_ksh: 160,
-    cook_time_minutes: 35,
-    category: "Traditional"
+    detailed_ingredients: [
+      { item: "Matoke", price_range_ksh: "80", estimated_cost: 80 },
+      { item: "Peanuts", price_range_ksh: "40", estimated_cost: 40 },
+      { item: "Veggies", price_range_ksh: "20", estimated_cost: 20 }
+    ],
+    steps: [
+      { step: 1, instruction: "Peel and boil bananas." },
+      { step: 2, instruction: "Make sauce with tomatoes and peanut powder." },
+      { step: 3, instruction: "Mix and simmer." }
+    ]
+  },
+
+  // --- DINNER ---
+  {
+    id: "dn_001",
+    title: "Pilau Njeri (Budget)",
+    category: "Dinner",
+    region: "Coastal",
+    moods: ["Happy", "Stressed"],
+    isQuickMeal: false,
+    estimated_cost_ksh: 180,
+    cook_time_minutes: 50,
+    ingredients: ["Rice", "Potatoes", "Pilau Masala", "Onions"],
+    detailed_ingredients: [
+      { item: "Rice", price_range_ksh: "60", estimated_cost: 60 },
+      { item: "Potatoes", price_range_ksh: "50", estimated_cost: 50 },
+      { item: "Spices", price_range_ksh: "20", estimated_cost: 20 },
+       { item: "Oil/Onion", price_range_ksh: "50", estimated_cost: 50 }
+    ],
+    steps: [
+      { step: 1, instruction: "Fry onions until dark brown." },
+      { step: 2, instruction: "Add potatoes and spices." },
+      { step: 3, instruction: "Add rice and water, cook until fluffy." }
+    ]
   },
   {
-    id: "comf_004",
-    title: "Pilau (Vegetarian)",
-    ingredients: ["Rice", "Pilau Masala", "Potatoes"],
-    steps: [{ step: 1, instruction: "Cook rice with spices and potatoes." }],
-    estimated_cost_ksh: 160,
-    cook_time_minutes: 40,
-    category: "Rice Dishes"
-  },
-  {
-    id: "comf_005",
-    title: "Spaghetti Bolognese (Kenyan)",
-    ingredients: ["Spaghetti", "Minced Meat", "Tomato"],
-    steps: [{ step: 1, instruction: "Cook pasta." }, { step: 2, instruction: "Make meat sauce." }],
-    estimated_cost_ksh: 200,
+    id: "dn_002",
+    title: "Ugali & Managu (Traditional Greens)",
+    category: "Dinner",
+    region: "Rift Valley",
+    moods: ["Healthy", "Tired"],
+    isQuickMeal: true,
+    estimated_cost_ksh: 90,
     cook_time_minutes: 30,
-    category: "Dinner"
-  },
-
-  // --- UNDER 250 KSH (PREMIUM) ---
-  {
-    id: "prem_001",
-    title: "Pilau Njeri (Beef)",
-    ingredients: ["Rice", "Beef", "Potatoes", "Pilau Masala"],
-    steps: [{ step: 1, instruction: "Fry beef/potatoes." }, { step: 2, instruction: "Add rice/water." }],
-    estimated_cost_ksh: 240,
-    cook_time_minutes: 55,
-    category: "Rice Dishes"
-  },
-  {
-    id: "prem_002",
-    title: "Fish & Ugali",
-    ingredients: ["Fish Piece", "Ugali Flour", "Sukuma"],
-    steps: [{ step: 1, instruction: "Fry fish." }, { step: 2, instruction: "Make stew." }, { step: 3, instruction: "Serve with Ugali." }],
-    estimated_cost_ksh: 250,
-    cook_time_minutes: 45,
-    category: "Ugali Dishes"
+    ingredients: ["Maize Flour", "Managu", "Cream/Milk"],
+    detailed_ingredients: [
+      { item: "Managu", price_range_ksh: "40", estimated_cost: 40 },
+      { item: "Flour", price_range_ksh: "20", estimated_cost: 20 },
+      { item: "Cream", price_range_ksh: "30", estimated_cost: 30 }
+    ],
+    steps: [
+      { step: 1, instruction: "Boil Managu briefly." },
+      { step: 2, instruction: "Fry with onions, finish with cream." },
+      { step: 3, instruction: "Serve with Ugali." }
+    ]
   },
   {
-    id: "prem_003",
-    title: "Chicken Stew & Chapati",
-    ingredients: ["Chicken", "Wheat Flour", "Onion"],
-    steps: [{ step: 1, instruction: "Cook chicken stew." }, { step: 2, instruction: "Eat with chapati." }],
-    estimated_cost_ksh: 250,
-    cook_time_minutes: 90,
-    category: "Chapati Dishes"
-  },
-  {
-    id: "prem_004",
-    title: "Liver & Rice",
-    ingredients: ["Beef Liver", "Rice", "Peppers"],
-    steps: [{ step: 1, instruction: "Pan fry liver with peppers." }, { step: 2, instruction: "Serve with rice." }],
-    estimated_cost_ksh: 230,
-    cook_time_minutes: 25,
-    category: "Rice Dishes"
-  },
-
-  // --- UNDER 300 KSH (FEAST) ---
-  {
-    id: "feast_001",
-    title: "Wet Fry Beef & Mukimo",
-    ingredients: ["Beef", "Potatoes", "Maize", "Pumpkin Leaves"],
-    steps: [{ step: 1, instruction: "Mash mukimo ingredients." }, { step: 2, instruction: "Wet fry beef." }],
-    estimated_cost_ksh: 290,
+    id: "dn_003",
+    title: "Chapati & Ndengu (Green Grams)",
+    category: "Dinner",
+    region: "Nairobi",
+    moods: ["Happy", "Healthy"],
+    isQuickMeal: false,
+    estimated_cost_ksh: 150,
     cook_time_minutes: 60,
-    category: "Traditional"
+    ingredients: ["Wheat Flour", "Green Grams", "Carrots", "Coriander"],
+    detailed_ingredients: [
+      { item: "Flour/Oil", price_range_ksh: "60", estimated_cost: 60 },
+      { item: "Ndengu", price_range_ksh: "50", estimated_cost: 50 },
+      { item: "Veggies", price_range_ksh: "40", estimated_cost: 40 }
+    ],
+    steps: [
+      { step: 1, instruction: "Knead dough and cook soft chapatis." },
+      { step: 2, instruction: "Fry boiled ndengu with carrots and coriander." }
+    ]
   },
   {
-    id: "feast_002",
-    title: "Bhajia & Sausage Feast",
-    ingredients: ["Potatoes", "Gram Flour", "Sausages"],
-    steps: [{ step: 1, instruction: "Fry battered potatoes." }, { step: 2, instruction: "Fry sausages." }],
-    estimated_cost_ksh: 280,
-    cook_time_minutes: 45,
-    category: "Fast Food"
-  },
-  {
-    id: "feast_003",
-    title: "Kuku Choma & Ugali",
-    ingredients: ["Chicken Quarter", "Ugali Flour", "Kachumbari"],
-    steps: [{ step: 1, instruction: "Roast chicken." }, { step: 2, instruction: "Serve with Ugali/Salsa." }],
+    id: "dn_004",
+    title: "Beef Wet Fry & Mukimo",
+    category: "Dinner",
+    region: "Central",
+    moods: ["Happy", "Stressed"],
+    isQuickMeal: false,
     estimated_cost_ksh: 300,
-    cook_time_minutes: 60,
-    category: "Special"
+    cook_time_minutes: 70,
+    ingredients: ["Beef", "Potatoes", "Pumpkin Leaves", "Maize"],
+    detailed_ingredients: [
+      { item: "Beef", price_range_ksh: "150", estimated_cost: 150 },
+      { item: "Mukimo Ing.", price_range_ksh: "150", estimated_cost: 150 }
+    ],
+    steps: [
+      { step: 1, instruction: "Boil potatoes, maize and greens, then mash." },
+      { step: 2, instruction: "Fry beef with tomatoes and onions." }
+    ]
+  },
+  {
+    id: "dn_005",
+    title: "Sukuma Wiki & Ugali (The Survivor)",
+    category: "Dinner",
+    region: "All",
+    moods: ["Broke", "Healthy"],
+    isQuickMeal: true,
+    estimated_cost_ksh: 50,
+    cook_time_minutes: 20,
+    ingredients: ["Sukuma", "Maize Flour", "Onion"],
+    detailed_ingredients: [
+      { item: "Sukuma", price_range_ksh: "20", estimated_cost: 20 },
+      { item: "Flour", price_range_ksh: "20", estimated_cost: 20 },
+      { item: "Onion", price_range_ksh: "10", estimated_cost: 10 }
+    ],
+    steps: [
+      { step: 1, instruction: "Fry sukuma quickly." },
+      { step: 2, instruction: "Cook Ugali." }
+    ]
+  },
+  
+  // --- SNACKS / STREET FOOD ---
+  {
+    id: "sn_001",
+    title: "Mutura & Supu",
+    category: "Snack",
+    region: "Central",
+    moods: ["Happy", "Broke"],
+    isQuickMeal: true,
+    estimated_cost_ksh: 30,
+    cook_time_minutes: 0,
+    ingredients: ["Mutura piece", "Bone Soup"],
+    detailed_ingredients: [
+      { item: "Mutura", price_range_ksh: "20", estimated_cost: 20 },
+      { item: "Soup", price_range_ksh: "10", estimated_cost: 10 }
+    ],
+    steps: [
+      { step: 1, instruction: "Visit local butchery." },
+      { step: 2, instruction: "Order 20 bob mutura and soup." }
+    ]
+  },
+  {
+    id: "sn_002",
+    title: "Roasted Maize (Mahindi Choma)",
+    category: "Snack",
+    region: "All",
+    moods: ["Tired", "Broke"],
+    isQuickMeal: true,
+    estimated_cost_ksh: 30,
+    cook_time_minutes: 5,
+    ingredients: ["Maize Cob", "Chili Lemon"],
+    detailed_ingredients: [
+      { item: "Maize", price_range_ksh: "30", estimated_cost: 30 }
+    ],
+    steps: [
+      { step: 1, instruction: "Buy from roadside vendor." },
+      { step: 2, instruction: "Apply chili and lemon." }
+    ]
+  },
+  {
+    id: "sn_003",
+    title: "Viazi Karai & Ukwaju",
+    category: "Snack",
+    region: "Coastal",
+    moods: ["Happy", "Stressed"],
+    isQuickMeal: false,
+    estimated_cost_ksh: 80,
+    cook_time_minutes: 30,
+    ingredients: ["Potatoes", "Gram Flour", "Tamarind"],
+    detailed_ingredients: [
+      { item: "Potatoes", price_range_ksh: "40", estimated_cost: 40 },
+      { item: "Flour/Oil", price_range_ksh: "30", estimated_cost: 30 },
+      { item: "Ukwaju", price_range_ksh: "10", estimated_cost: 10 }
+    ],
+    steps: [
+      { step: 1, instruction: "Boil potatoes." },
+      { step: 2, instruction: "Coat in colored batter and deep fry." },
+      { step: 3, instruction: "Dip in tamarind sauce." }
+    ]
+  },
+  
+  // --- BUDGET SPECIFIC (< 50 KES) ---
+  {
+    id: "bg_001",
+    title: "Bread & Blueband",
+    category: "Snack",
+    region: "All",
+    moods: ["Broke", "Tired"],
+    isQuickMeal: true,
+    estimated_cost_ksh: 40,
+    cook_time_minutes: 2,
+    ingredients: ["Bread Slices", "Margarine"],
+    detailed_ingredients: [
+      { item: "Quarter Bread", price_range_ksh: "30", estimated_cost: 30 },
+      { item: "Blueband", price_range_ksh: "10", estimated_cost: 10 }
+    ],
+    steps: [{ step: 1, instruction: "Spread blueband on bread." }]
+  },
+  
+  // --- STUDENT MEALS ---
+  {
+    id: "st_001",
+    title: "Indomie & Egg",
+    category: "Dinner",
+    region: "All",
+    moods: ["Tired", "Stressed"],
+    isQuickMeal: true,
+    estimated_cost_ksh: 60,
+    cook_time_minutes: 10,
+    ingredients: ["Noodles", "Egg", "Onion"],
+    detailed_ingredients: [
+      { item: "Indomie", price_range_ksh: "40", estimated_cost: 40 },
+      { item: "Egg", price_range_ksh: "15", estimated_cost: 15 },
+      { item: "Onion", price_range_ksh: "5", estimated_cost: 5 }
+    ],
+    steps: [
+      { step: 1, instruction: "Fry onion, add water." },
+      { step: 2, instruction: "Add noodles and tastemaker." },
+      { step: 3, instruction: "Crack egg on top and cover." }
+    ]
+  },
+  {
+    id: "st_002",
+    title: "Spaghetti & Ketchup",
+    category: "Dinner",
+    region: "All",
+    moods: ["Broke", "Tired"],
+    isQuickMeal: true,
+    estimated_cost_ksh: 80,
+    cook_time_minutes: 15,
+    ingredients: ["Spaghetti", "Ketchup", "Oil"],
+    detailed_ingredients: [
+      { item: "Pasta", price_range_ksh: "50", estimated_cost: 50 },
+      { item: "Sauce", price_range_ksh: "20", estimated_cost: 20 }
+    ],
+    steps: [
+      { step: 1, instruction: "Boil pasta." },
+      { step: 2, instruction: "Toss with oil and ketchup." }
+    ]
+  },
+
+  // --- DRINKS ---
+  {
+    id: "dr_001",
+    title: "Dawa (Hot Lemon & Ginger)",
+    category: "Drink",
+    region: "All",
+    moods: ["Healthy", "Stressed"],
+    isQuickMeal: true,
+    estimated_cost_ksh: 40,
+    cook_time_minutes: 10,
+    ingredients: ["Lemon", "Ginger", "Honey/Sugar"],
+    detailed_ingredients: [
+      { item: "Lemon", price_range_ksh: "10", estimated_cost: 10 },
+      { item: "Ginger", price_range_ksh: "10", estimated_cost: 10 },
+      { item: "Honey", price_range_ksh: "20", estimated_cost: 20 }
+    ],
+    steps: [
+      { step: 1, instruction: "Boil crushed ginger." },
+      { step: 2, instruction: "Squeeze lemon and add honey." }
+    ]
+  },
+  {
+    id: "dr_002",
+    title: "Maziwa Mala & Ugali",
+    category: "Lunch",
+    region: "Rift Valley",
+    moods: ["Tired", "Healthy"],
+    isQuickMeal: true,
+    estimated_cost_ksh: 85,
+    cook_time_minutes: 20,
+    ingredients: ["Ugali Flour", "Fermented Milk"],
+    detailed_ingredients: [
+      { item: "Mala", price_range_ksh: "60", estimated_cost: 60 },
+      { item: "Flour", price_range_ksh: "25", estimated_cost: 25 }
+    ],
+    steps: [
+      { step: 1, instruction: "Cook stiff Ugali." },
+      { step: 2, instruction: "Serve with cold Mala." }
+    ]
   }
 ];

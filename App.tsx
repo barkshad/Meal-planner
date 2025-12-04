@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   FoodItem, 
@@ -9,7 +10,9 @@ import {
   InventoryAnalysisResponse,
   UserProfile,
   AnalyticsData,
-  Recipe 
+  Recipe,
+  RegionType,
+  MoodType
 } from './types';
 import { INITIAL_FOODS, DEFAULT_PREFERENCES } from './constants';
 import { FoodManager } from './components/FoodManager';
@@ -21,18 +24,18 @@ import { AnalyticsView } from './components/AnalyticsView';
 import { Onboarding } from './components/Onboarding';
 import { EditBudgetModal } from './components/EditBudgetModal';
 import { RecipesView } from './components/RecipesView'; 
+import { SpinWheel } from './components/SpinWheel';
+import { CoupleMode } from './components/CoupleMode';
 import { runAIAction } from './services/geminiService';
-import { ChefHat, Loader2, Home, Calendar, ShoppingCart, Archive, Wallet, LogOut, BarChart3, Sparkles, Utensils } from 'lucide-react';
+import { OFFLINE_RECIPES } from './services/fallback/offlineRecipes';
+import { selectMealsFromDatabase } from './services/fallback/fallbackEngine';
+import { ChefHat, Loader2, Home, Calendar, ShoppingCart, Archive, Wallet, LogOut, BarChart3, Sparkles, Utensils, Dices, Trophy, Heart, MapPin, Smile } from 'lucide-react';
 
-type ViewMode = 'meal' | 'week' | 'shop' | 'pantry' | 'analytics' | 'recipes';
+type ViewMode = 'meal' | 'week' | 'shop' | 'pantry' | 'analytics' | 'recipes' | 'challenges';
 
 const LS_KEYS = {
   USER: 'mealmind_user',
   PREFS: 'mealmind_preferences',
-  AI_RESULTS: 'mealmind_ai_results',
-  FALLBACK_RESULTS: 'mealmind_fallback_results',
-  BUDGET: 'mealmind_user_budget',
-  VIEW: 'mealmind_last_active_view'
 };
 
 const App: React.FC = () => {
@@ -60,6 +63,9 @@ const App: React.FC = () => {
 
   // --- UI States ---
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
+  const [showSpinWheel, setShowSpinWheel] = useState(false);
+  const [showCoupleMode, setShowCoupleMode] = useState(false);
+  const [spinCandidates, setSpinCandidates] = useState<Recipe[]>([]);
 
   // --- Initialization & Local Storage ---
   
@@ -94,6 +100,7 @@ const App: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
+      // Pass the new enhanced preferences (mood, region)
       const result = await runAIAction('suggest_meal', { 
         preferences, 
         inventory,
@@ -106,6 +113,42 @@ const App: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSpinWheel = () => {
+    // Get valid candidates based on current filters
+    const candidates = selectMealsFromDatabase(
+      preferences.budget, 
+      selectedMealType === MealType.AUTO ? undefined : selectedMealType, 
+      preferences.dietType, 
+      preferences.region,
+      preferences.mood,
+      false // Relaxed budget for wheel fun
+    );
+    
+    if (candidates.length < 2) {
+      alert("Not enough meals match your current filters to spin. Try relaxing your filters!");
+      return;
+    }
+    
+    setSpinCandidates(candidates);
+    setShowSpinWheel(true);
+  };
+
+  const handleWheelResult = (recipe: Recipe) => {
+    setShowSpinWheel(false);
+    setMealResult({
+      meal_type: recipe.category,
+      suggestions: [{
+        food: recipe.title,
+        estimated_cost: recipe.estimated_cost_ksh,
+        reason: "The Wheel of Destiny chose this!"
+      }],
+      total_meal_cost: recipe.estimated_cost_ksh,
+      within_budget: recipe.estimated_cost_ksh <= preferences.budget,
+      auto_adjusted: false,
+      message: "Destiny has spoken!"
+    });
   };
   
   const handleReset = () => {
@@ -157,9 +200,13 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen relative text-slate-800 selection:bg-emerald-100 font-sans bg-slate-50">
+    <div className="min-h-screen relative text-slate-800 selection:bg-emerald-100 font-sans bg-slate-50 pb-20">
       
       {showOnboarding && <Onboarding onComplete={() => setShowOnboarding(false)} />}
+      
+      {showSpinWheel && <SpinWheel candidates={spinCandidates} onResult={handleWheelResult} onClose={() => setShowSpinWheel(false)} />}
+      
+      {showCoupleMode && <CoupleMode onClose={() => setShowCoupleMode(false)} />}
 
       {isBudgetModalOpen && (
           <EditBudgetModal 
@@ -185,6 +232,9 @@ const App: React.FC = () => {
                     <Wallet size={14} />
                     <span>KES {preferences.budget}</span>
                  </button>
+                 <button onClick={() => setShowCoupleMode(true)} className="text-pink-400 hover:text-pink-600 transition-colors">
+                     <Heart size={20} />
+                 </button>
                  <button onClick={() => setUser(null)} className="text-slate-400 hover:text-red-500 transition-colors">
                      <LogOut size={20} />
                  </button>
@@ -197,43 +247,118 @@ const App: React.FC = () => {
         {loading ? (
             <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
                 <Loader2 size={40} className="text-emerald-500 animate-spin mb-4" />
-                <p className="text-slate-500 font-medium animate-pulse">Consulting AI Chef...</p>
+                <p className="text-slate-500 font-medium animate-pulse">Consulting Verified Database...</p>
            </div>
         ) : (
           <>
             {currentView === 'meal' && (
-               <div className="space-y-6">
+               <div className="space-y-6 animate-slide-up">
                   {!mealResult ? (
-                      <div className="glass-panel p-8 text-center space-y-6">
-                          <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                              <Sparkles size={40} className="text-emerald-500" />
-                          </div>
-                          <h2 className="text-2xl font-bold text-slate-800">What's cooking?</h2>
-                          <p className="text-slate-500 max-w-xs mx-auto">Get a guaranteed meal suggestion from our Verified Database.</p>
-                          
-                          <div className="flex justify-center gap-2 flex-wrap">
-                            {Object.values(MealType).map((type) => (
-                                <button
-                                    key={type}
-                                    onClick={() => setSelectedMealType(type)}
-                                    className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all ${selectedMealType === type ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-200' : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300'}`}
-                                >
-                                    {type}
-                                </button>
-                            ))}
-                          </div>
+                      <div className="space-y-6">
+                        {/* Filters Card */}
+                        <div className="glass-panel p-5 space-y-4">
+                           <div className="flex justify-between items-center">
+                             <h3 className="font-bold text-slate-700 flex items-center gap-2"><Smile size={18}/> Mood</h3>
+                             <select 
+                               value={preferences.mood || 'Neutral'}
+                               onChange={(e) => setPreferences({...preferences, mood: e.target.value as MoodType})}
+                               className="bg-slate-100 border-none rounded-lg text-sm font-bold text-slate-600 focus:ring-0 cursor-pointer"
+                             >
+                               <option value="Neutral">Normal</option>
+                               <option value="Stressed">Stressed</option>
+                               <option value="Happy">Happy</option>
+                               <option value="Tired">Tired</option>
+                               <option value="Broke">Broke</option>
+                               <option value="Healthy">Healthy</option>
+                             </select>
+                           </div>
+                           
+                           <div className="flex justify-between items-center">
+                             <h3 className="font-bold text-slate-700 flex items-center gap-2"><MapPin size={18}/> Region</h3>
+                             <select 
+                               value={preferences.region || 'All'}
+                               onChange={(e) => setPreferences({...preferences, region: e.target.value as RegionType})}
+                               className="bg-slate-100 border-none rounded-lg text-sm font-bold text-slate-600 focus:ring-0 cursor-pointer"
+                             >
+                               <option value="All">All Kenya</option>
+                               <option value="Coastal">Coastal</option>
+                               <option value="Western">Western</option>
+                               <option value="Central">Central</option>
+                               <option value="Nairobi">Nairobi</option>
+                             </select>
+                           </div>
 
+                           <div className="h-px bg-slate-100 w-full my-2"></div>
+
+                           <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                              {Object.values(MealType).map((type) => (
+                                  <button
+                                      key={type}
+                                      onClick={() => setSelectedMealType(type)}
+                                      className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${selectedMealType === type ? 'bg-slate-800 text-white shadow-md' : 'bg-white border border-slate-200 text-slate-600'}`}
+                                  >
+                                      {type}
+                                  </button>
+                              ))}
+                           </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="grid grid-cols-5 gap-3">
                           <button 
                             onClick={handleSuggestMeal}
-                            className="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-xl shadow-emerald-200 hover:bg-emerald-700 hover:-translate-y-1 transition-all flex items-center justify-center gap-2"
+                            className="col-span-4 bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-xl shadow-emerald-200 hover:bg-emerald-700 hover:-translate-y-1 transition-all flex items-center justify-center gap-2"
                           >
                               <Sparkles size={20} /> Get Meal Suggestions
                           </button>
+                          
+                          <button 
+                            onClick={handleSpinWheel}
+                            className="col-span-1 bg-gradient-to-br from-purple-500 to-indigo-600 text-white rounded-xl shadow-lg hover:shadow-purple-200 flex items-center justify-center hover:-translate-y-1 transition-all"
+                          >
+                             <Dices size={24} />
+                          </button>
+                        </div>
+                        
+                        {/* Weekly Challenge Teaser */}
+                        <div className="glass-panel p-4 bg-gradient-to-r from-orange-50 to-amber-50 border-orange-100 flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow" onClick={() => setCurrentView('challenges')}>
+                           <div className="flex items-center gap-3">
+                              <div className="p-2 bg-white rounded-full shadow-sm text-orange-500">
+                                <Trophy size={20} />
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-slate-800 text-sm">Weekly Challenge</h4>
+                                <p className="text-xs text-slate-500">The 200 Bob Survivor</p>
+                              </div>
+                           </div>
+                           <div className="text-xs font-bold bg-white px-2 py-1 rounded text-orange-600 shadow-sm">Join</div>
+                        </div>
+
                       </div>
                   ) : (
                       <ResultCard data={mealResult} onReset={handleReset} />
                   )}
               </div>
+            )}
+            
+            {currentView === 'challenges' && (
+               <div className="space-y-4 animate-slide-up">
+                 <h2 className="text-2xl font-bold text-slate-800 mb-4 flex items-center gap-2"><Trophy className="text-orange-500"/> Challenges</h2>
+                 {[1,2,3].map(i => (
+                   <div key={i} className="glass-panel p-5 relative overflow-hidden group">
+                     <div className="absolute top-0 right-0 p-10 bg-orange-100 rounded-full -mr-5 -mt-5 opacity-50 group-hover:scale-110 transition-transform"></div>
+                     <h3 className="font-bold text-lg relative z-10">The 200 Bob Survivor</h3>
+                     <p className="text-sm text-slate-500 mb-3 relative z-10">Eat for under KES 200/day for 3 days.</p>
+                     <div className="w-full bg-slate-100 h-2 rounded-full mb-3">
+                        <div className="bg-orange-500 h-2 rounded-full w-1/3"></div>
+                     </div>
+                     <div className="flex justify-between items-center relative z-10">
+                       <span className="text-xs font-bold text-slate-400">Day 1 of 3</span>
+                       <button className="px-3 py-1 bg-orange-500 text-white text-xs font-bold rounded-lg shadow-lg shadow-orange-200">Log Meal</button>
+                     </div>
+                   </div>
+                 ))}
+               </div>
             )}
 
             {currentView === 'week' && weeklyPlan && (

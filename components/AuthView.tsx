@@ -27,8 +27,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLogin }) => {
         email: email,
         preferences: DEFAULT_PREFERENCES,
         savedPlans: [],
-        // FIX: Added missing savedRecipes property to conform to UserProfile type.
         savedRecipes: [],
+        challenges: [],
       };
       
       // Persist to local storage for demo

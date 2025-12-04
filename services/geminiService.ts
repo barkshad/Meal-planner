@@ -11,8 +11,7 @@ import {
   generateFallbackAnalytics,
   generateFallbackInventoryAnalysis,
   generateFallbackRecipe,
-  selectMealsFromDatabase,
-  getValidMeals
+  selectMealsFromDatabase
 } from "./fallback/fallbackEngine";
 import { OFFLINE_RECIPES } from "./fallback/offlineRecipes";
 
