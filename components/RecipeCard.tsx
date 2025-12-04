@@ -1,6 +1,7 @@
+
 import React, { useRef, useState } from 'react';
 import { Recipe } from '../types';
-import { ChefHat, Clock, DollarSign, ListOrdered, Utensils, Download, Share2, Loader2, FileDown, ImageIcon } from 'lucide-react';
+import { ChefHat, Clock, DollarSign, ListOrdered, Utensils, FileDown, Share2, Loader2, ImageIcon } from 'lucide-react';
 
 // Declare global types for the libraries loaded in index.html
 declare global {
@@ -34,11 +35,14 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
       const buttons = cardRef.current.querySelector('.action-buttons') as HTMLElement;
       if (buttons) buttons.style.display = 'none';
 
-      // Capture high-res canvas
+      // Capture high-res canvas (Scale 3 for crisp text)
       const canvas = await window.html2canvas(cardRef.current, {
-        scale: 2,
+        scale: 3, // Increased scale to fix blur
         useCORS: true,
-        backgroundColor: '#ffffff'
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: cardRef.current.scrollWidth,
+        windowHeight: cardRef.current.scrollHeight
       });
 
       if (buttons) buttons.style.display = 'flex';
@@ -53,14 +57,16 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
       let heightLeft = imgHeight;
       let position = 0;
 
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      // Add first page
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, '', 'FAST');
       heightLeft -= pageHeight;
 
       // Handle multi-page if recipe is very long
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight; // Move position up
         pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'PNG', 0, position - (heightLeft - pageHeight), imgWidth, imgHeight, '', 'FAST'); 
+        // Simplified logic: usually you just subtract pageHeight from y-offset
         heightLeft -= pageHeight;
       }
       
@@ -82,10 +88,14 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
       const buttons = cardRef.current.querySelector('.action-buttons') as HTMLElement;
       if (buttons) buttons.style.display = 'none';
 
+      // Capture high-res canvas (Scale 3 for crisp text)
       const canvas = await window.html2canvas(cardRef.current, {
-        scale: 2,
+        scale: 3, // Increased scale to fix blur
         useCORS: true,
-        backgroundColor: '#ffffff'
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: cardRef.current.scrollWidth,
+        windowHeight: cardRef.current.scrollHeight
       });
 
       if (buttons) buttons.style.display = 'flex';
@@ -115,7 +125,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
             // Fallback: Download
             downloadImage(canvas, fileName);
         }
-      }, 'image/png');
+      }, 'image/png', 1.0);
 
     } catch (error) {
       console.error('Image Generation failed', error);
@@ -127,7 +137,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
 
   const downloadImage = (canvas: HTMLCanvasElement, fileName: string) => {
     const link = document.createElement('a');
-    link.href = canvas.toDataURL('image/png');
+    link.href = canvas.toDataURL('image/png', 1.0);
     link.download = fileName;
     document.body.appendChild(link);
     link.click();
